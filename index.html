@@ -22,111 +22,125 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // 최종 수정된 100개 사자성어 원본 데이터셋
-    const IDIOM_DATA = [
-      { id: 1, chosung: 'ㄱ', idiom_kr: '가렴주구', idiom_cn: '苛斂誅求', mean1: '가혹하게 세금을 거두거나 백성의 재물을 억지로 뺏음', mean2: '' },
-      { id: 2, chosung: 'ㄱ', idiom_kr: '각골통한', idiom_cn: '刻骨痛恨', mean1: '뼈에 새겨 놓을 만큼 잊을 수 없고 고통스러운 원한', mean2: '' },
-      { id: 3, chosung: 'ㄱ', idiom_kr: '감언이설', idiom_cn: '甘言利說', mean1: '입에 발린 말과 이익을 약속하는 말', mean2: '상대방을 현혹시키기 위해서 꾸민 달콤한 말과 이득을 내세워 속이는 말' },
-      { id: 4, chosung: 'ㄱ', idiom_kr: '감탄고토', idiom_cn: '甘呑苦吐', mean1: '달면 삼키고 쓰면 뱉는다는 뜻', mean2: '비위에 맞으면 좋아하고 맞지 않으면 싫어한다는 의미' },
-      { id: 5, chosung: 'ㄱ', idiom_kr: '갑론을박', idiom_cn: '甲論乙駁', mean1: '갑이 논하면 을이 논박한다는 뜻', mean2: '서로 논란하고 반박함을 이르는 말' },
-      { id: 6, chosung: '견', idiom_kr: '견강부회', idiom_cn: '牽強附會', mean1: '이치에 맞지 않는 말을 억지로 끌어 붙여 자기의 주장에 맞도록 함', mean2: '' },
-      { id: 7, chosung: '결', idiom_kr: '결초보은', idiom_cn: '結草報恩', mean1: '무슨 짓을 하여서든지 잊지 않고 은혜에 보답함', mean2: '' },
-      { id: 8, chosung: '경', idiom_kr: '경거망동', idiom_cn: '輕擧妄動', mean1: '가볍고 망령되게 행동한다는 뜻', mean2: '' },
-      { id: 9, chosung: '고', idiom_kr: '고립무원', idiom_cn: '孤立無援', mean1: '고립되어 도움을 받을 데가 없음', mean2: '' },
-      { id: 10, chosung: '고', idiom_kr: '고진감래', idiom_cn: '苦盡甘來', mean1: '쓴 것이 다하면 단 것이 온다는 뜻', mean2: '고생 끝에 낙이 온다는 뜻' },
-      { id: 11, chosung: '괄', idiom_kr: '괄목상대', idiom_cn: '刮目相對', mean1: '눈을 비비고 상대를 대한다는 뜻', mean2: '남의 학식이나 재주가 놀라운 정도로 부쩍 향상됨을 뜻함' },
-      { id: 12, chosung: '구', idiom_kr: '구사일생', idiom_cn: '九死一生', mean1: '죽을 고비를 여러 차례 넘기고 겨우 살아남을 이르는 말', mean2: '' },
-      { id: 13, chosung: '구', idiom_kr: '구우일모', idiom_cn: '九牛一毛', mean1: '아홉 마리 소에 털 한가닥이 빠진 정도라는 뜻', mean2: '아주 큰 물건 속에 있는 아주 작은 물건, 대단히 많은 것 중의 아주 적은 것의 비유' },
-      { id: 14, chosung: '권', idiom_kr: '권불십년', idiom_cn: '權不十年', mean1: '아무리 막강한 권력도 10년 못 간다는 뜻', mean2: '영원할 것 같지만 오래가지 못해 결국은 무너진다는 의미' },
-      { id: 15, chosung: '기', idiom_kr: '기사회생', idiom_cn: '起死回生', mean1: '죽을 고비에서 벗어나 다시 살아남', mean2: '' },
-      { id: 16, chosung: '기', idiom_kr: '기호지세', idiom_cn: '騎虎之勢', mean1: '범에 올라탄 기세. 즉 이미 시작한 일이라 도중에 그만둘 수 없는 상황', mean2: '' },
-      { id: 17, chosung: '내', idiom_kr: '내우외환', idiom_cn: '內憂外患', mean1: '내부에서 일어나는 근심과 외부로부터 받는 근심이란 뜻', mean2: '나라 안팎의 여러 가지 근심 걱정을 이르는 말' },
-      { id: 18, chosung: '노', idiom_kr: '노심초사', idiom_cn: '勞心焦思', mean1: '몹시 마음을 쓰며 애를 태움', mean2: '' },
-      { id: 19, chosung: '대', idiom_kr: '대경실색', idiom_cn: '大驚失色', mean1: '크게 놀라 얼굴빛을 잃는다는 뜻', mean2: '낯빛이 하얗게 질릴 정도로 몹시 놀란 모습을 이름' },
-      { id: 20, chosung: '동', idiom_kr: '동문서답', idiom_cn: '東問西答', mean1: '동쪽을 묻자 서쪽을 답한다는 뜻', mean2: '묻는 말에 대하여 전혀 엉뚱한 대답을 가리키는 말' },
-      { id: 21, chosung: '동', idiom_kr: '동병상련', idiom_cn: '同病相憐', mean1: '같은 병자끼리 가엾게 여긴다는 뜻', mean2: '어려운 처지에 있는 사람끼리 서로 불쌍히 여겨 동정하고 도움' },
-      { id: 22, chosung: '동', idiom_kr: '동분서주', idiom_cn: '東奔西走', mean1: '동쪽으로 뛰고 서쪽으로 뛴다는 뜻', mean2: '이리저리 몹시 바쁘게 돌아다님' },
-      { id: 23, chosung: '동', idiom_kr: '동상이몽', idiom_cn: '同牀異夢', mean1: '같은 자리에 자면서 다른 꿈을 꾼다', mean2: '겉으로는 같이 행동하면서 속으로는 다른 생각을 하는 것' },
-      { id: 24, chosung: '두', idiom_kr: '두문불출', idiom_cn: '杜門不出', mean1: '문을 닫고 밖으로 나가지 않음. 즉 집에만 박혀 있으면서 결코 바깥출입을 하지 않는 모습', mean2: '' },
-      { id: 25, chosung: '마', idiom_kr: '마이동풍', idiom_cn: '馬耳東風', mean1: '남의 비평이나 의견을 조금도 귀담아 듣지 아니하고 흘려버림을 이름', mean2: '' },
-      { id: 26, chosung: '망', idiom_kr: '망양지탄', idiom_cn: '亡羊之歎', mean1: '달아난 양을 찾다가 여러 갈래의 길 앞에서 길을 잃었다는 의미', mean2: '방향이 많아 할 바를 모르게 됨' },
-      { id: 27, chosung: '맥', idiom_kr: '맥수지탄', idiom_cn: '麥秀之嘆', mean1: '고국의 멸망을 안타까워함', mean2: '' },
-      { id: 28, chosung: '면', idiom_kr: '면종복배', idiom_cn: '面從腹背', mean1: '겉으로는 순종하는 체하고 속으로는 딴 마음을 먹음', mean2: '' },
-      { id: 29, chosung: '명', idiom_kr: '명재경각', idiom_cn: '命在頃刻', mean1: '목숨이 경각에 달려 있다는 뜻', mean2: '즉 목숨이 눈 깜짝할 동안에 사라질 수도 있는 위험한 상황' },
-      { id: 30, chosung: '목', idiom_kr: '목불인견', idiom_cn: '目不忍見', mean1: '눈으로 볼 수 없을 정도로 비참하거나 안타까운 모습', mean2: '' },
-      { id: 31, chosung: '무', idiom_kr: '무위도식', idiom_cn: '無爲徒食', mean1: '하는 일 없이 헛되이 먹기만 함', mean2: '' },
-      { id: 32, chosung: '반', idiom_kr: '반신반의', idiom_cn: '半信半疑', mean1: '믿으면서도 한편으로는 의심함', mean2: '' },
-      { id: 33, chosung: '방', idiom_kr: '방약무인', idiom_cn: '傍若無人', mean1: '곁에 사람이 없는 것처럼 행동함.', mean2: '주위 사람을 의식하지 않고 제멋대로 행동하는 것' },
-      { id: 34, chosung: '백', idiom_kr: '백년하청', idiom_cn: '百年河淸', mean1: '백 년을 기다린다 해도 황하의 흐린 물은 맑아지지 않는다는 뜻', mean2: '오랫동안 기다려도 바라는 것이 이루어질 수 없음을 이르는 말' },
-      { id: 35, chosung: '백', idiom_kr: '백척간두', idiom_cn: '百尺竿頭', mean1: '백 척 되는 장대의 꼭대기', mean2: '그런 곳에 매달려 있을 정도로 위급하고 어려운 상황' },
-      { id: 36, chosung: '부', idiom_kr: '부화뇌동', idiom_cn: '附和雷同', mean1: '우레 소리에 맞춰 함께한다는 뜻', mean2: '자신의 뚜렷한 소신 없이 그저 남이 하는 대로 따라가는 것을 의미함' },
-      { id: 37, chosung: '분', idiom_kr: '분기탱천', idiom_cn: '憤氣沖天', mean1: '분한 마음이 하늘을 찌를 듯 격렬하게 북받쳐 오름', mean2: '' },
-      { id: 38, chosung: '비', idiom_kr: '비분강개', idiom_cn: '悲憤慷慨', mean1: '슬프고 분한 느낌이 마음에 가득 차 있음', mean2: '' },
-      { id: 39, chosung: '사', idiom_kr: '사고무친', idiom_cn: '四顧無親', mean1: '사방을 둘러봐도 의지할만한 사람이 도무지 없다는 뜻', mean2: '' },
-      { id: 40, chosung: '사', idiom_kr: '사면초가', idiom_cn: '四面楚歌', mean1: '사방에서 들려오는 초나라 노래라는 뜻', mean2: '적에게 포위되거나 몹시 어려운 일을 당하여 극복할 방법이 전혀 없는 곤경' },
-      { id: 41, chosung: '사', idiom_kr: '사필귀정', idiom_cn: '事必歸正', mean1: '처음에는 시비곡직을 가리지 못하여 그릇되더라도 모든 일은 결국에 가서는 반드시 정리로 돌아감', mean2: '결국 모든 일은 바른 결과로 돌아간다는 의미' },
-      { id: 42, chosung: '삼', idiom_kr: '삼고초려', idiom_cn: '三顧草廬', mean1: '초가집을 세 번 찾아감', mean2: '훌륭한 인물을 모시기 위해 최선을 다하는 모습' },
-      { id: 43, chosung: '삼', idiom_kr: '삼십육계', idiom_cn: '三十六計', mean1: '도망가야 할 때에는 기회를 보고 무조건 도망을 쳐서 몸을 안전하게 하는 일이 병법상의 최상책이라는 뜻', mean2: '' },
-      { id: 44, chosung: '상', idiom_kr: '상전벽해', idiom_cn: '桑田碧海', mean1: '뽕나무밭이 푸른 바다가 되었다라는 뜻', mean2: '세상이 몰라 볼 정도로 바뀐 것. 세상의 모든 일이 엄청나게 변해버린 것' },
-      { id: 45, chosung: '새', idiom_kr: '새옹지마', idiom_cn: '塞翁之馬', mean1: '세상만사는 변화가 많아 어느 것이 화가 되고 어느 것이 복이 될지 예측하기가 어려워 재앙도 슬퍼할 게 못되고 복도 기뻐할 것이 아님을 이르는 말', mean2: '인생의 길흉화복은 늘 바뀌어 변화가 많음을 이름' },
-      { id: 46, chosung: '선', idiom_kr: '선견지명', idiom_cn: '先見之明', mean1: '미래에 전개될 일을 남보다 먼저 예견하는 총명함', mean2: '' },
-      { id: 47, chosung: '설', idiom_kr: '설상가상', idiom_cn: '雪上加霜', mean1: '눈 위에 또 서리가 내린다는 뜻', mean2: "어려운 일이 겹침을 이룸 또는 '환난이 거듭됨'을 비유하여 이르는 말" },
-      { id: 48, chosung: '설', idiom_kr: '설왕설래', idiom_cn: '說往說來', mean1: '말들이 왔다 갔다 함', mean2: '즉 의견이나 입장이 달라 말로 옥신각신하는 모습' },
-      { id: 49, chosung: '수', idiom_kr: '수구초심', idiom_cn: '首丘初心', mean1: '여우가 죽을 때 제가 살던 언덕으로 머리를 둔다는 뜻', mean2: '고향이나 근본을 잊지 않는다는 의미' },
-      { id: 50, chosung: '수', idiom_kr: '수주대토', idiom_cn: '守株待兔', mean1: '나무 그루터기를 지키며 토끼를 기다린다는 뜻', mean2: '실효성 없는 기대는 공연히 시간만 허비하고, 우연한 행운 또는 불로소득을 기대하는 어리석음' },
-      { id: 51, chosung: '순', idiom_kr: '순망치한', idiom_cn: '脣亡齒寒', mean1: '입술이 없으면 이가 시리다는 말', mean2: '서로 떨어질 수 없는 밀접한 관계' },
-      { id: 52, chosung: '식', idiom_kr: '식자우환', idiom_cn: '識字憂患', mean1: '글자를 아는 것이 오히려 걱정을 끼친다는 말', mean2: '너무 많이 알기 때문에 쓸데없는 걱정도 그만큼 많다' },
-      { id: 53, chosung: '아', idiom_kr: '아전인수', idiom_cn: '我田引水', mean1: '자기 논에 물 대기라는 뜻', mean2: '자기에게만 이롭게 되도록 생각하거나 행동함을 이르는 말' },
-      { id: 54, chosung: '안', idiom_kr: '안분지족', idiom_cn: '安分知足', mean1: '자기 분수에 만족하여 다른 데 마음을 두지 아니함', mean2: '' },
-      { id: 55, chosung: '안', idiom_kr: '안하무인', idiom_cn: '眼下無人', mean1: '눈 아래에 사람이 없다는 뜻', mean2: '사람됨이 교만하여 남을 업신여김을 이르는 말' },
-      { id: 56, chosung: '어', idiom_kr: '어불성설', idiom_cn: '語不成說', mean1: '말이 이치를 이루지 못하다. 즉, 말이 전혀 사리에 맞지 않음', mean2: '' },
-      { id: 57, chosung: '연', idiom_kr: '연목구어', idiom_cn: '緣木求魚', mean1: '나무에서 물고기를 구한다는 의미', mean2: '목적과 수단이 일치하지 않아 성공이 불가능함' },
-      { id: 58, chosung: '오', idiom_kr: '오리무중', idiom_cn: '五里霧中', mean1: '무슨 일에 대하여 방향이나 상황을 알 길이 없음, 일의 갈피를 잡기 어려움', mean2: '' },
-      { id: 59, chosung: '오', idiom_kr: '오매불망', idiom_cn: '寤寐不忘', mean1: '자나 깨나 잊지 못하다', mean2: '사랑하는 사람을 그리워하여 잠 못 들거나 근심 또는 생각이 많아 잠 못 드는 것' },
-      { id: 60, chosung: '오', idiom_kr: '오월동주', idiom_cn: '吳越同舟', mean1: '서로 미워하면서도 공동의 어려움이나 이해에 대해서는 협력하는 경우를 비유하는 말', mean2: '' },
-      { id: 61, chosung: '온', idiom_kr: '온고지신', idiom_cn: '溫故知新', mean1: '옛것을 익히고 그것을 미루어서 새로운 것을 앎', mean2: '' },
-      { id: 62, chosung: '우', idiom_kr: '우후죽순', idiom_cn: '雨後竹筍', mean1: '비가 온 뒤에 솟는 죽순이라는 뜻', mean2: '어떤 일이 일시에 많이 일어남을 이르는 말' },
-      { id: 63, chosung: '유', idiom_kr: '유구무언', idiom_cn: '有口無言', mean1: '입은 있으나 할 말이 없음', mean2: '잘못이 분명해 변명하거나 해명할 길이 없음' },
-      { id: 64, chosung: '이', idiom_kr: '이심전심', idiom_cn: '以心傳心', mean1: '마음과 마음으로 서로 뜻이 통함', mean2: '문자나 언어 없이 남을 깨닫게 한다는 말' },
-      { id: 65, chosung: '일', idiom_kr: '일거양득', idiom_cn: '一擧兩得', mean1: '한가지의 일로 두가지의 이득을 보는 것', mean2: '' },
-      { id: 66, chosung: '일', idiom_kr: '일벌백계', idiom_cn: '一罰百戒', mean1: '한 사람을 벌줌으로써, 만인에게 경계가 되도록 한다는 뜻', mean2: '' },
-      { id: 67, chosung: '일', idiom_kr: '일장춘몽', idiom_cn: '一場春夢', mean1: '인생의 허무함을 한바탕의 봄꿈에 비유하여 이르는 말', mean2: '' },
-      { id: 68, chosung: '일', idiom_kr: '일진일퇴', idiom_cn: '一進一退', mean1: '한 번 나아감과 물러섬', mean2: '좋았다가 나빠졌다 함' },
-      { id: 69, chosung: '일', idiom_kr: '일희일비', idiom_cn: '一喜一悲', mean1: '한편으로는 기뻐하고 한편으로는 슬퍼함', mean2: '또는 기쁨과 슬픔이 번갈아 일어남' },
-      { id: 70, chosung: '자', idiom_kr: '자가당착', idiom_cn: '自家撞着', mean1: '스스로 부딪치기도 하고 붙기도 함', mean2: '한 사람의 말과 행동이 서로 앞뒤가 맞지 않는 모습' },
-      { id: 71, chosung: '자', idiom_kr: '자승자박', idiom_cn: '自繩自縛', mean1: '자기가 자기를 망치게 한다는 뜻', mean2: '즉, 자기 언행으로 인해 자신이 꼼짝 못하게 되는 일' },
-      { id: 72, chosung: '적', idiom_kr: '적반하장', idiom_cn: '賊反荷杖', mean1: '도둑이 도리어 몽둥이를 든다는 뜻', mean2: '잘못한 사람이 도리어 잘한 사람을 나무라는 경우' },
-      { id: 73, chosung: '전', idiom_kr: '전인미답', idiom_cn: '前人未踏', mean1: '지금까지 아무도 손을 대거나 발을 디딘 일이 없음', mean2: '' },
-      { id: 74, chosung: '전', idiom_kr: '전전긍긍', idiom_cn: '戰戰兢兢', mean1: '어떤 위기감에 떠는 심정을 비유하는 말', mean2: '' },
-      { id: 75, chosung: '전', idiom_kr: '전전반측', idiom_cn: '輾轉反側', mean1: '수레바퀴가 헛없이 돌며 옆으로 뒤척인다는 뜻', mean2: '근심과 걱정으로 잠을 이루지 못함을 비유하는 말' },
-      { id: 76, chosung: '전', idiom_kr: '전화위복', idiom_cn: '轉禍爲福', mean1: '화가 바뀌어 오히려 복이 된다는 뜻', mean2: '어떤 불행한 일이라도 끊임없는 노력과 강인한 의지로 힘쓰면 불행을 행복으로 바꾸어 놓을 수 있다는 말' },
-      { id: 77, chosung: '절', idiom_kr: '절치부심', idiom_cn: '切齒腐心', mean1: '이를 갈고 마음을 썩힌다는 뜻', mean2: '대단히 분하게 여기고 마음을 썩임' },
-      { id: 78, chosung: '점', idiom_kr: '점입가경', idiom_cn: '漸入佳境', mean1: '가면 갈수록 경치가 더해진다는 뜻', mean2: '일이 점점 더 재미있는 지경으로 돌아가는 것을 비유하는 말' },
-      { id: 79, chosung: '조', idiom_kr: '조삼모사', idiom_cn: '朝三暮四', mean1: '먹이를 아침에 세 개, 저녁에 네 개씩 주겠다는 말에는 원숭이들이 적다고 화를 내더니 아침에 네 개, 저녁에 세 개씩 주겠다는 말에는 좋아하였다는 데서 유래한 말', mean2: '간사한 꾀로 남을 속여 희롱함을 이르는 말' },
-      { id: 80, chosung: '좌', idiom_kr: '좌불안석', idiom_cn: '坐不安席', mean1: '마음이 불안하거나 걱정스러워서 한군데에 가만히 앉아 있지 못하고 안절부절못하는 모양', mean2: '' },
-      { id: 81, chosung: '중', idiom_kr: '중구난방', idiom_cn: '衆口難防', mean1: '여러 사람이 각기 말하는 의견이 봇물 터지듯 쏟아져 나옴', mean2: '' },
-      { id: 82, chosung: '진', idiom_kr: '진퇴양난', idiom_cn: '進退兩難', mean1: '나아갈 수도 물러설 수도 없는 궁지에 빠짐', mean2: '' },
-      { id: 83, chosung: '진', idiom_kr: '진퇴유곡', idiom_cn: '進退維谷', mean1: '앞으로도 뒤로도 나아가거나 물러서지 못한다는 뜻', mean2: '' },
-      { id: 84, chosung: '천', idiom_kr: '천우신조', idiom_cn: '天佑神助', mean1: '도저히 이루어질 수 없다고 여긴 일이 이루어지거나, 힘든 상황에서 극적으로 벗어나는 경우', mean2: '' },
-      { id: 85, chosung: '청', idiom_kr: '청천벽력', idiom_cn: '靑天霹靂', mean1: '맑게 갠 하늘에서 갑자기 떨어지는 벼락이라는 뜻', mean2: '돌발적인 사태나 사변을 이르는 말' },
-      { id: 86, chosung: '청', idiom_kr: '청출어람', idiom_cn: '靑出於藍', mean1: '제자가 스승보다 나은 것을 비유하는 말', mean2: '' },
-      { id: 87, chosung: '침', idiom_kr: '침소봉대', idiom_cn: '針小棒大', mean1: '바늘만한 것을 몽둥이 만하다고 말함이란 뜻', mean2: '작은 일을 크게 과장하여 말함' },
-      { id: 88, chosung: '탁', idiom_kr: '탁상공론', idiom_cn: '卓上空論', mean1: '탁자 위에서만 펼치는 헛된 논설이란 뜻', mean2: '실현성이 없는 허황된 이론을 일컬음' },
-      { id: 89, chosung: '토', idiom_kr: '토사구팽', idiom_cn: '兎死狗烹', mean1: '토끼가 죽으면 사냥개는 잡혀서 삶아진다는 뜻', mean2: '목적을 달성하고 나면 그 목적에 이용된 도구나 사람은 무용하게 되어 배척되거나 제거된다는 의미' },
-      { id: 90, chosung: '표', idiom_kr: '표리부동', idiom_cn: '表裏不同', mean1: '겉과 안이 같지 않음', mean2: '즉 겉과 속이 다른 음흉한 품성' },
-      { id: 91, chosung: '풍', idiom_kr: '풍수지탄', idiom_cn: '風樹之嘆', mean1: '바람이 나무를 흔들 듯', mean2: '자식이 효도하려 할 때 부모는 이미 죽어 효행을 다하지 못하는 슬픔' },
-      { id: 92, chosung: '함', idiom_kr: '함구무언', idiom_cn: '緘口無言', mean1: '입을 다물고 아무런 말이 없음', mean2: '' },
-      { id: 93, chosung: '허', idiom_kr: '허장성세', idiom_cn: '虛張聲勢', mean1: '헛된 목소리의 기세만 높다는 뜻', mean2: '실력이 없으면서도 허세로만 떠벌림' },
-      { id: 94, chosung: '호', idiom_kr: '호가호위', idiom_cn: '狐假虎威', mean1: '여우가 호랑이의 위세를 빌려 호기를 부린다는 뜻', mean2: '남의 세력을 빌려 위세를 부림' },
-      { id: 95, chosung: '혼', idiom_kr: '혼비백산', idiom_cn: '魂飛魄散', mean1: '넋이 날아가고 넋이 흩어진다는 뜻', mean2: '몹시 놀라 어찌할 바를 모름' },
-      { id: 96, chosung: '화', idiom_kr: '화룡점정', idiom_cn: '畫龍點睛', mean1: '용을 그린 다음 마지막으로 눈동자를 그린다는 뜻', mean2: '가장 요긴한 부분을 마치어 일을 끝냄을 이르는 말' },
-      { id: 97, chosung: '환', idiom_kr: '환골탈태', idiom_cn: '換骨奪胎', mean1: '뼈대를 바꾸어 끼고 태를 바꾸어 쓴다는 뜻', mean2: '사람이 보다 나은 방향으로 변하여 전혀 딴사람처럼 됨' },
-      { id: 98, chosung: '회', idiom_kr: '회자정리', idiom_cn: '會者定離', mean1: '만나면 언젠가는 헤어지게 되어 있다는 뜻', mean2: '' },
-      { id: 99, chosung: '후', idiom_kr: '후안무치', idiom_cn: '厚顔無恥', mean1: '뻔뻔스러워 부끄러워할 줄 모름', mean2: '' },
-      { id: 100, chosung: '흥', idiom_kr: '흥진비래', idiom_cn: '興盡悲來', mean1: '즐거운 일이 지나가면 슬픈 일이 닥쳐온다는 뜻', mean2: '' }
+    // 한글 단어에서 첫 자음(초성 ㄱ~ㅎ) 추출 함수
+    const getChosung = (str) => {
+      const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+      const code = str.charCodeAt(0) - 44032;
+      if (code < 0 || code > 11172) return str.charAt(0);
+      return cho[Math.floor(code / 588)];
+    };
+
+    // 100개 사자성어 원본 데이터셋
+    const IDIOM_DATA_RAW = [
+      { id: 1, idiom_kr: '가렴주구', idiom_cn: '苛斂誅求', mean1: '가혹하게 세금을 거두거나 백성의 재물을 억지로 뺏음', mean2: '' },
+      { id: 2, idiom_kr: '각골통한', idiom_cn: '刻骨痛恨', mean1: '뼈에 새겨 놓을 만큼 잊을 수 없고 고통스러운 원한', mean2: '' },
+      { id: 3, idiom_kr: '감언이설', idiom_cn: '甘言利說', mean1: '입에 발린 말과 이익을 약속하는 말', mean2: '상대방을 현혹시키기 위해서 꾸민 달콤한 말과 이득을 내세워 속이는 말' },
+      { id: 4, idiom_kr: '감탄고토', idiom_cn: '甘呑苦吐', mean1: '달면 삼키고 쓰면 뱉는다는 뜻', mean2: '비위에 맞으면 좋아하고 맞지 않으면 싫어한다는 의미' },
+      { id: 5, idiom_kr: '갑론을박', idiom_cn: '甲論乙駁', mean1: '갑이 논하면 을이 논박한다는 뜻', mean2: '서로 논란하고 반박함을 이르는 말' },
+      { id: 6, idiom_kr: '견강부회', idiom_cn: '牽強附會', mean1: '이치에 맞지 않는 말을 억지로 끌어 붙여 자기의 주장에 맞도록 함', mean2: '' },
+      { id: 7, idiom_kr: '결초보은', idiom_cn: '結草報恩', mean1: '무슨 짓을 하여서든지 잊지 않고 은혜에 보답함', mean2: '' },
+      { id: 8, idiom_kr: '경거망동', idiom_cn: '輕擧妄動', mean1: '가볍고 망령되게 행동한다는 뜻', mean2: '' },
+      { id: 9, idiom_kr: '고립무원', idiom_cn: '孤立無援', mean1: '고립되어 도움을 받을 데가 없음', mean2: '' },
+      { id: 10, idiom_kr: '고진감래', idiom_cn: '苦盡甘來', mean1: '쓴 것이 다하면 단 것이 온다는 뜻', mean2: '고생 끝에 낙이 온다는 뜻' },
+      { id: 11, idiom_kr: '괄목상대', idiom_cn: '刮目相對', mean1: '눈을 비비고 상대를 대한다는 뜻', mean2: '남의 학식이나 재주가 놀라운 정도로 부쩍 향상됨을 뜻함' },
+      { id: 12, idiom_kr: '구사일생', idiom_cn: '九死一生', mean1: '죽을 고비를 여러 차례 넘기고 겨우 살아남을 이르는 말', mean2: '' },
+      { id: 13, idiom_kr: '구우일모', idiom_cn: '九牛一毛', mean1: '아홉 마리 소에 털 한가닥이 빠진 정도라는 뜻', mean2: '아주 큰 물건 속에 있는 아주 작은 물건, 대단히 많은 것 중의 아주 적은 것의 비유' },
+      { id: 14, idiom_kr: '권불십년', idiom_cn: '權不十年', mean1: '아무리 막강한 권력도 10년 못 간다는 뜻', mean2: '영원할 것 같지만 오래가지 못해 결국은 무너진다는 의미' },
+      { id: 15, idiom_kr: '기사회생', idiom_cn: '起死回生', mean1: '죽을 고비에서 벗어나 다시 살아남', mean2: '' },
+      { id: 16, idiom_kr: '기호지세', idiom_cn: '騎虎之勢', mean1: '범에 올라탄 기세. 즉 이미 시작한 일이라 도중에 그만둘 수 없는 상황', mean2: '' },
+      { id: 17, idiom_kr: '내우외환', idiom_cn: '內憂外患', mean1: '내부에서 일어나는 근심과 외부로부터 받는 근심이란 뜻', mean2: '나라 안팎의 여러 가지 근심 걱정을 이르는 말' },
+      { id: 18, idiom_kr: '노심초사', idiom_cn: '勞心焦思', mean1: '몹시 마음을 쓰며 애를 태움', mean2: '' },
+      { id: 19, idiom_kr: '대경실색', idiom_cn: '大驚失色', mean1: '크게 놀라 얼굴빛을 잃는다는 뜻', mean2: '낯빛이 하얗게 질릴 정도로 몹시 놀란 모습을 이름' },
+      { id: 20, idiom_kr: '동문서답', idiom_cn: '東問西答', mean1: '동쪽을 묻자 서쪽을 답한다는 뜻', mean2: '묻는 말에 대하여 전혀 엉뚱한 대답을 가리키는 말' },
+      { id: 21, idiom_kr: '동병상련', idiom_cn: '同病相憐', mean1: '같은 병자끼리 가엾게 여긴다는 뜻', mean2: '어려운 처지에 있는 사람끼리 서로 불쌍히 여겨 동정하고 도움' },
+      { id: 22, idiom_kr: '동분서주', idiom_cn: '東奔西走', mean1: '동쪽으로 뛰고 서쪽으로 뛴다는 뜻', mean2: '이리저리 몹시 바쁘게 돌아다님' },
+      { id: 23, idiom_kr: '동상이몽', idiom_cn: '同牀異夢', mean1: '같은 자리에 자면서 다른 꿈을 꾼다', mean2: '겉으로는 같이 행동하면서 속으로는 다른 생각을 하는 것' },
+      { id: 24, idiom_kr: '두문불출', idiom_cn: '杜門不出', mean1: '문을 닫고 밖으로 나가지 않음. 즉 집에만 박혀 있으면서 결코 바깥출입을 하지 않는 모습', mean2: '' },
+      { id: 25, idiom_kr: '마이동풍', idiom_cn: '馬耳東風', mean1: '남의 비평이나 의견을 조금도 귀담아 듣지 아니하고 흘려버림을 이름', mean2: '' },
+      { id: 26, idiom_kr: '망양지탄', idiom_cn: '亡羊之歎', mean1: '달아난 양을 찾다가 여러 갈래의 길 앞에서 길을 잃었다는 의미', mean2: '방향이 많아 할 바를 모르게 됨' },
+      { id: 27, idiom_kr: '맥수지탄', idiom_cn: '麥秀之嘆', mean1: '고국의 멸망을 안타까워함', mean2: '' },
+      { id: 28, idiom_kr: '면종복배', idiom_cn: '面從腹背', mean1: '겉으로는 순종하는 체하고 속으로는 딴 마음을 먹음', mean2: '' },
+      { id: 29, idiom_kr: '명재경각', idiom_cn: '命在頃刻', mean1: '목숨이 경각에 달려 있다는 뜻', mean2: '즉 목숨이 눈 깜짝할 동안에 사라질 수도 있는 위험한 상황' },
+      { id: 30, idiom_kr: '목불인견', idiom_cn: '目不忍見', mean1: '눈으로 볼 수 없을 정도로 비참하거나 안타까운 모습', mean2: '' },
+      { id: 31, idiom_kr: '무위도식', idiom_cn: '無爲徒食', mean1: '하는 일 없이 헛되이 먹기만 함', mean2: '' },
+      { id: 32, idiom_kr: '반신반의', idiom_cn: '半信半疑', mean1: '믿으면서도 한편으로는 의심함', mean2: '' },
+      { id: 33, idiom_kr: '방약무인', idiom_cn: '傍若無人', mean1: '곁에 사람이 없는 것처럼 행동함.', mean2: '주위 사람을 의식하지 않고 제멋대로 행동하는 것' },
+      { id: 34, idiom_kr: '백년하청', idiom_cn: '百年河淸', mean1: '백 년을 기다린다 해도 황하의 흐린 물은 맑아지지 않는다는 뜻', mean2: '오랫동안 기다려도 바라는 것이 이루어질 수 없음을 이르는 말' },
+      { id: 35, idiom_kr: '백척간두', idiom_cn: '百尺竿頭', mean1: '백 척 되는 장대의 꼭대기', mean2: '그런 곳에 매달려 있을 정도로 위급하고 어려운 상황' },
+      { id: 36, idiom_kr: '부화뇌동', idiom_cn: '附和雷同', mean1: '우레 소리에 맞춰 함께한다는 뜻', mean2: '자신의 뚜렷한 소신 없이 그저 남이 하는 대로 따라가는 것을 의미함' },
+      { id: 37, idiom_kr: '분기탱천', idiom_cn: '憤氣沖天', mean1: '분한 마음이 하늘을 찌를 듯 격렬하게 북받쳐 오름', mean2: '' },
+      { id: 38, idiom_kr: '비분강개', idiom_cn: '悲憤慷慨', mean1: '슬프고 분한 느낌이 마음에 가득 차 있음', mean2: '' },
+      { id: 39, idiom_kr: '사고무친', idiom_cn: '四顧無親', mean1: '사방을 둘러봐도 의지할만한 사람이 도무지 없다는 뜻', mean2: '' },
+      { id: 40, idiom_kr: '사면초가', idiom_cn: '四面楚歌', mean1: '사방에서 들려오는 초나라 노래라는 뜻', mean2: '적에게 포위되거나 몹시 어려운 일을 당하여 극복할 방법이 전혀 없는 곤경' },
+      { id: 41, idiom_kr: '사필귀정', idiom_cn: '事必歸正', mean1: '처음에는 시비곡직을 가리지 못하여 그릇되더라도 모든 일은 결국에 가서는 반드시 정리로 돌아감', mean2: '결국 모든 일은 바른 결과로 돌아간다는 의미' },
+      { id: 42, idiom_kr: '삼고초려', idiom_cn: '三顧草廬', mean1: '초가집을 세 번 찾아감', mean2: '훌륭한 인물을 모시기 위해 최선을 다하는 모습' },
+      { id: 43, idiom_kr: '삼십육계', idiom_cn: '三十六計', mean1: '도망가야 할 때에는 기회를 보고 무조건 도망을 쳐서 몸을 안전하게 하는 일이 병법상의 최상책이라는 뜻', mean2: '' },
+      { id: 44, idiom_kr: '상전벽해', idiom_cn: '桑田碧海', mean1: '뽕나무밭이 푸른 바다가 되었다라는 뜻', mean2: '세상이 몰라 볼 정도로 바뀐 것. 세상의 모든 일이 엄청나게 변해버린 것' },
+      { id: 45, idiom_kr: '새옹지마', idiom_cn: '塞翁之馬', mean1: '세상만사는 변화가 많아 어느 것이 화가 되고 어느 것이 복이 될지 예측하기가 어려워 재앙도 슬퍼할 게 못되고 복도 기뻐할 것이 아님을 이르는 말', mean2: '인생의 길흉화복은 늘 바뀌어 변화가 많음을 이름' },
+      { id: 46, idiom_kr: '선견지명', idiom_cn: '先見之明', mean1: '미래에 전개될 일을 남보다 먼저 예견하는 총명함', mean2: '' },
+      { id: 47, idiom_kr: '설상가상', idiom_cn: '雪上加霜', mean1: '눈 위에 또 서리가 내린다는 뜻', mean2: "어려운 일이 겹침을 이룸 또는 '환난이 거듭됨'을 비유하여 이르는 말" },
+      { id: 48, idiom_kr: '설왕설래', idiom_cn: '說往說來', mean1: '말들이 왔다 갔다 함', mean2: '즉 의견이나 입장이 달라 말로 옥신각신하는 모습' },
+      { id: 49, idiom_kr: '수구초심', idiom_cn: '首丘初心', mean1: '여우가 죽을 때 제가 살던 언덕으로 머리를 둔다는 뜻', mean2: '고향이나 근본을 잊지 않는다는 의미' },
+      { id: 50, idiom_kr: '수주대토', idiom_cn: '守株待兔', mean1: '나무 그루터기를 지키며 토끼를 기다린다는 뜻', mean2: '실효성 없는 기대는 공연히 시간만 허비하고, 우연한 행운 또는 불로소득을 기대하는 어리석음' },
+      { id: 51, idiom_kr: '순망치한', idiom_cn: '脣亡齒寒', mean1: '입술이 없으면 이가 시리다는 말', mean2: '서로 떨어질 수 없는 밀접한 관계' },
+      { id: 52, idiom_kr: '식자우환', idiom_cn: '識字憂患', mean1: '글자를 아는 것이 오히려 걱정을 끼친다는 말', mean2: '너무 많이 알기 때문에 쓸데없는 걱정도 그만큼 많다' },
+      { id: 53, idiom_kr: '아전인수', idiom_cn: '我田引水', mean1: '자기 논에 물 대기라는 뜻', mean2: '자기에게만 이롭게 되도록 생각하거나 행동함을 이르는 말' },
+      { id: 54, idiom_kr: '안분지족', idiom_cn: '安分知足', mean1: '자기 분수에 만족하여 다른 데 마음을 두지 아니함', mean2: '' },
+      { id: 55, idiom_kr: '안하무인', idiom_cn: '眼下無人', mean1: '눈 아래에 사람이 없다는 뜻', mean2: '사람됨이 교만하여 남을 업신여김을 이르는 말' },
+      { id: 56, idiom_kr: '어불성설', idiom_cn: '語不成說', mean1: '말이 이치를 이루지 못하다. 즉, 말이 전혀 사리에 맞지 않음', mean2: '' },
+      { id: 57, idiom_kr: '연목구어', idiom_cn: '緣木求魚', mean1: '나무에서 물고기를 구한다는 의미', mean2: '목적과 수단이 일치하지 않아 성공이 불가능함' },
+      { id: 58, idiom_kr: '오리무중', idiom_cn: '五里霧中', mean1: '무슨 일에 대하여 방향이나 상황을 알 길이 없음, 일의 갈피를 잡기 어려움', mean2: '' },
+      { id: 59, idiom_kr: '오매불망', idiom_cn: '寤寐不忘', mean1: '자나 깨나 잊지 못하다', mean2: '사랑하는 사람을 그리워하여 잠 못 들거나 근심 또는 생각이 많아 잠 못 드는 것' },
+      { id: 60, idiom_kr: '오월동주', idiom_cn: '吳越同舟', mean1: '서로 미워하면서도 공동의 어려움이나 이해에 대해서는 협력하는 경우를 비유하는 말', mean2: '' },
+      { id: 61, idiom_kr: '온고지신', idiom_cn: '溫故知新', mean1: '옛것을 익히고 그것을 미루어서 새로운 것을 앎', mean2: '' },
+      { id: 62, idiom_kr: '우후죽순', idiom_cn: '雨後竹筍', mean1: '비가 온 뒤에 솟는 죽순이라는 뜻', mean2: '어떤 일이 일시에 많이 일어남을 이르는 말' },
+      { id: 63, idiom_kr: '유구무언', idiom_cn: '有口無言', mean1: '입은 있으나 할 말이 없음', mean2: '잘못이 분명해 변명하거나 해명할 길이 없음' },
+      { id: 64, idiom_kr: '이심전심', idiom_cn: '以心傳心', mean1: '마음과 마음으로 서로 뜻이 통함', mean2: '문자나 언어 없이 남을 깨닫게 한다는 말' },
+      { id: 65, idiom_kr: '일거양득', idiom_cn: '一擧兩得', mean1: '한가지의 일로 두가지의 이득을 보는 것', mean2: '' },
+      { id: 66, idiom_kr: '일벌백계', idiom_cn: '一罰百戒', mean1: '한 사람을 벌줌으로써, 만인에게 경계가 되도록 한다는 뜻', mean2: '' },
+      { id: 67, idiom_kr: '일장춘몽', idiom_cn: '一場春夢', mean1: '인생의 허무함을 한바탕의 봄꿈에 비유하여 이르는 말', mean2: '' },
+      { id: 68, idiom_kr: '일진일퇴', idiom_cn: '一進一退', mean1: '한 번 나아감과 물러섬', mean2: '좋았다가 나빠졌다 함' },
+      { id: 69, idiom_kr: '일희일비', idiom_cn: '一喜一悲', mean1: '한편으로는 기뻐하고 한편으로는 슬퍼함', mean2: '또는 기쁨과 슬픔이 번갈아 일어남' },
+      { id: 70, idiom_kr: '자가당착', idiom_cn: '自家撞着', mean1: '스스로 부딪치기도 하고 붙기도 함', mean2: '한 사람의 말과 행동이 서로 앞뒤가 맞지 않는 모습' },
+      { id: 71, idiom_kr: '자승자박', idiom_cn: '自繩自縛', mean1: '자기가 자기를 망치게 한다는 뜻', mean2: '즉, 자기 언행으로 인해 자신이 꼼짝 못하게 되는 일' },
+      { id: 72, idiom_kr: '적반하장', idiom_cn: '賊反荷杖', mean1: '도둑이 도리어 몽둥이를 든다는 뜻', mean2: '잘못한 사람이 도리어 잘한 사람을 나무라는 경우' },
+      { id: 73, idiom_kr: '전인미답', idiom_cn: '前人未踏', mean1: '지금까지 아무도 손을 대거나 발을 디딘 일이 없음', mean2: '' },
+      { id: 74, idiom_kr: '전전긍긍', idiom_cn: '戰戰兢兢', mean1: '어떤 위기감에 떠는 심정을 비유하는 말', mean2: '' },
+      { id: 75, idiom_kr: '전전반측', idiom_cn: '輾轉反側', mean1: '수레바퀴가 헛없이 돌며 옆으로 뒤척인다는 뜻', mean2: '근심과 걱정으로 잠을 이루지 못함을 비유하는 말' },
+      { id: 76, idiom_kr: '전화위복', idiom_cn: '轉禍爲福', mean1: '화가 바뀌어 오히려 복이 된다는 뜻', mean2: '어떤 불행한 일이라도 끊임없는 노력과 강인한 의지로 힘쓰면 불행을 행복으로 바꾸어 놓을 수 있다는 말' },
+      { id: 77, idiom_kr: '절치부심', idiom_cn: '切齒腐心', mean1: '이를 갈고 마음을 썩힌다는 뜻', mean2: '대단히 분하게 여기고 마음을 썩임' },
+      { id: 78, idiom_kr: '점입가경', idiom_cn: '漸入佳境', mean1: '가면 갈수록 경치가 더해진다는 뜻', mean2: '일이 점점 더 재미있는 지경으로 돌아가는 것을 비유하는 말' },
+      { id: 79, idiom_kr: '조삼모사', idiom_cn: '朝三暮四', mean1: '먹이를 아침에 세 개, 저녁에 네 개씩 주겠다는 말에는 원숭이들이 적다고 화를 내더니 아침에 네 개, 저녁에 세 개씩 주겠다는 말에는 좋아하였다는 데서 유래한 말', mean2: '간사한 꾀로 남을 속여 희롱함을 이르는 말' },
+      { id: 80, idiom_kr: '좌불안석', idiom_cn: '坐不安席', mean1: '마음이 불안하거나 걱정스러워서 한군데에 가만히 앉아 있지 못하고 안절부절못하는 모양', mean2: '' },
+      { id: 81, idiom_kr: '중구난방', idiom_cn: '衆口難防', mean1: '여러 사람이 각기 말하는 의견이 봇물 터지듯 쏟아져 나옴', mean2: '' },
+      { id: 82, idiom_kr: '진퇴양난', idiom_cn: '進退兩難', mean1: '나아갈 수도 물러설 수도 없는 궁지에 빠짐', mean2: '' },
+      { id: 83, idiom_kr: '진퇴유곡', idiom_cn: '進退維谷', mean1: '앞으로도 뒤로도 나아가거나 물러서지 못한다는 뜻', mean2: '' },
+      { id: 84, idiom_kr: '천우신조', idiom_cn: '天佑神助', mean1: '도저히 이루어질 수 없다고 여긴 일이 이루어지거나, 힘든 상황에서 극적으로 벗어나는 경우', mean2: '' },
+      { id: 85, idiom_kr: '청천벽력', idiom_cn: '靑天霹靂', mean1: '맑게 갠 하늘에서 갑자기 떨어지는 벼락이라는 뜻', mean2: '돌발적인 사태나 사변을 이르는 말' },
+      { id: 86, idiom_kr: '청출어람', idiom_cn: '靑出於藍', mean1: '제자가 스승보다 나은 것을 비유하는 말', mean2: '' },
+      { id: 87, idiom_kr: '침소봉대', idiom_cn: '針小棒大', mean1: '바늘만한 것을 몽둥이 만하다고 말함이란 뜻', mean2: '작은 일을 크게 과장하여 말함' },
+      { id: 88, idiom_kr: '탁상공론', idiom_cn: '卓上空論', mean1: '탁자 위에서만 펼치는 헛된 논설이란 뜻', mean2: '실현성이 없는 허황된 이론을 일컬음' },
+      { id: 89, idiom_kr: '토사구팽', idiom_cn: '兔死狗烹', mean1: '토끼가 죽으면 사냥개는 잡혀서 삶아진다는 뜻', mean2: '목적을 달성하고 나면 그 목적에 이용된 도구나 사람은 무용하게 되어 배척되거나 제거된다는 의미' },
+      { id: 90, idiom_kr: '표리부동', idiom_cn: '表裏不同', mean1: '겉과 안이 같지 않음', mean2: '즉 겉과 속이 다른 음흉한 품성' },
+      { id: 91, idiom_kr: '풍수지탄', idiom_cn: '風樹之嘆', mean1: '바람이 나무를 흔들 듯', mean2: '자식이 효도하려 할 때 부모는 이미 죽어 효행을 다하지 못하는 슬픔' },
+      { id: 92, idiom_kr: '함구무언', idiom_cn: '緘口無言', mean1: '입을 다물고 아무런 말이 없음', mean2: '' },
+      { id: 93, idiom_kr: '허장성세', idiom_cn: '虛張聲勢', mean1: '헛된 목소리의 기세만 높다는 뜻', mean2: '실력이 없으면서도 허세로만 떠벌림' },
+      { id: 94, idiom_kr: '호가호위', idiom_cn: '狐假虎威', mean1: '여우가 호랑이의 위세를 빌려 호기를 부린다는 뜻', mean2: '남의 세력을 빌려 위세를 부림' },
+      { id: 95, idiom_kr: '혼비백산', idiom_cn: '魂飛魄散', mean1: '넋이 날아가고 넋이 흩어진다는 뜻', mean2: '몹시 놀라 어찌할 바를 모름' },
+      { id: 96, idiom_kr: '화룡점정', idiom_cn: '畫龍點睛', mean1: '용을 그린 다음 마지막으로 눈동자를 그린다는 뜻', mean2: '가장 요긴한 부분을 마치어 일을 끝냄을 이르는 말' },
+      { id: 97, idiom_kr: '환골탈태', idiom_cn: '換骨奪胎', mean1: '뼈대를 바꾸어 끼고 태를 바꾸어 쓴다는 뜻', mean2: '사람이 보다 나은 방향으로 변하여 전혀 딴사람처럼 됨' },
+      { id: 98, idiom_kr: '회자정리', idiom_cn: '會者定離', mean1: '만나면 언젠가는 헤어지게 되어 있다는 뜻', mean2: '' },
+      { id: 99, idiom_kr: '후안무치', idiom_cn: '厚顔無恥', mean1: '뻔뻔스러워 부끄러워할 줄 모름', mean2: '' },
+      { id: 100, idiom_kr: '흥진비래', idiom_cn: '興盡悲來', mean1: '즐거운 일이 지나가면 슬픈 일이 닥쳐온다는 뜻', mean2: '' }
     ];
 
-    // 뜻1, 뜻2 개별 분리 데이터셋 생성 후 완전 셔플 (괄목상대 등 분리된 카드가 연달아 나오지 않도록 함)
+    // 자동 초성(ㄱ, ㄴ, ㄷ...) 할당
+    const IDIOM_DATA = IDIOM_DATA_RAW.map(item => ({
+      ...item,
+      chosung: getChosung(item.idiom_kr)
+    }));
+
+    // 뜻1, 뜻2 개별 분리 데이터셋 생성 후 완전 셔플
     const rawSplitList = [];
     IDIOM_DATA.forEach(item => {
       rawSplitList.push({
@@ -246,7 +260,7 @@
       );
     }
 
-    // 모의고사 모듈 (즉시 O/X 및 정답 확인, 옵션 선택)
+    // 모의고사 모듈
     function ExamModule({ data, splitData, toggleReview, reviewIds }) {
       const [examStatus, setExamStatus] = useState('config'); 
       const [datasetMode, setDatasetMode] = useState('split');
@@ -521,7 +535,7 @@
       );
     }
 
-    // 플래시카드 모듈
+    // 플래시카드 모듈 (초성 개수 필터: ㄱ(개수)ㄴㄷㄹ...)
     function SwipeModule({ dataset, splitDataset, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
       const [datasetMode, setDatasetMode] = useState('split');
       const [chosungFilter, setChosungFilter] = useState('전체');
@@ -529,9 +543,18 @@
       const [index, setIndex] = useState(0);
       const [isFlipped, setIsFlipped] = useState(false);
 
-      const chosungList = ['전체', 'ㄱ', '견', '결', '경', '고', '괄', '구', '권', '기', '내', '노', '대', '동', '두', '마', '망', '맥', '면', '명', '목', '무', '반', '방', '백', '부', '분', '비', '사', '삼', '상', '새', '선', '설', '수', '순', '식', '아', '안', '어', '연', '오', '온', '우', '유', '이', '일', '자', '적', '전', '절', '점', '조', '좌', '중', '진', '천', '청', '침', '탁', '토', '표', '풍', '함', '허', '호', '혼', '화', '환', '회', '후', '흥'];
-
       const activePool = datasetMode === 'split' ? splitDataset : dataset;
+
+      // 초성별 개수 계산
+      const chosungCounts = useMemo(() => {
+        const counts = {};
+        activePool.forEach(item => {
+          counts[item.chosung] = (counts[item.chosung] || 0) + 1;
+        });
+        return counts;
+      }, [activePool]);
+
+      const baseChosungList = ["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 
       const filteredDataset = useMemo(() => {
         if (chosungFilter === '전체') return activePool;
@@ -565,7 +588,7 @@
       if (!current) {
         return (
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
-            <p className="text-slate-500 font-bold">해당 조건의 성어가 없습니다.</p>
+            <p className="text-slate-500 font-bold">해당 초성의 성어가 없습니다.</p>
             <button onClick={() => setChosungFilter('전체')} className="mt-4 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">전체 보기로 돌아가기</button>
           </div>
         );
@@ -573,6 +596,7 @@
 
       return (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 max-w-lg mx-auto">
+          {/* Mode Selector */}
           <div className="flex gap-2 mb-4 bg-slate-100 p-1 rounded-xl">
             <button onClick={() => setDatasetMode('normal')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${datasetMode === 'normal' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`}>
               📌 100개 성어 카드
@@ -582,14 +606,23 @@
             </button>
           </div>
 
+          {/* Chosung Filter with Counts */}
           <div className="mb-4 flex flex-wrap justify-between items-center gap-2">
-            <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1 border rounded-xl">
-              {chosungList.map(c => (
-                <button key={c} onClick={() => setChosungFilter(c)} className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${chosungFilter === c ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                  {c}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1 mb-2">
+              <button onClick={() => setChosungFilter('전체')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${chosungFilter === '전체' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                전체 ({activePool.length})
+              </button>
+              {baseChosungList.map(c => {
+                const cnt = chosungCounts[c] || 0;
+                if (cnt === 0) return null;
+                return (
+                  <button key={c} onClick={() => setChosungFilter(c)} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${chosungFilter === c ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                    {c}({cnt})
+                  </button>
+                );
+              })}
             </div>
+
             <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-full justify-end">
               <button onClick={() => setMode('sequential')} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${mode === 'sequential' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>순서대로</button>
               <button onClick={() => setMode('random')} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${mode === 'random' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>랜덤</button>
@@ -659,7 +692,15 @@
       const [chosungFilter, setChosungFilter] = useState('전체');
       const [searchQuery, setSearchQuery] = useState('');
 
-      const chosungList = ['전체', 'ㄱ', '견', '결', '경', '고', '괄', '구', '권', '기', '내', '노', '대', '동', '두', '마', '망', '맥', '면', '명', '목', '무', '반', '방', '백', '부', '분', '비', '사', '삼', '상', '새', '선', '설', '수', '순', '식', '아', '안', '어', '연', '오', '온', '우', '유', '이', '일', '자', '적', '전', '절', '점', '조', '좌', '중', '진', '천', '청', '침', '탁', '토', '표', '풍', '함', '허', '호', '혼', '화', '환', '회', '후', '흥'];
+      const baseChosungList = ["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+
+      const chosungCounts = useMemo(() => {
+        const counts = {};
+        data.forEach(item => {
+          counts[item.chosung] = (counts[item.chosung] || 0) + 1;
+        });
+        return counts;
+      }, [data]);
 
       const filteredData = useMemo(() => {
         return data.filter(item => {
@@ -683,12 +724,19 @@
             className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-600 mb-4"
           />
 
-          <div className="flex flex-wrap gap-1.5 mb-6 max-h-24 overflow-y-auto p-1 border rounded-xl">
-            {chosungList.map(c => (
-              <button key={c} onClick={() => setChosungFilter(c)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chosungFilter === c ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                {c}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-1.5 mb-6">
+            <button onClick={() => setChosungFilter('전체')} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chosungFilter === '전체' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              전체 ({data.length})
+            </button>
+            {baseChosungList.map(c => {
+              const cnt = chosungCounts[c] || 0;
+              if (cnt === 0) return null;
+              return (
+                <button key={c} onClick={() => setChosungFilter(c)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chosungFilter === c ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                  {c}({cnt})
+                </button>
+              );
+            })}
           </div>
 
           <div className="text-xs text-slate-400 mb-3">총 {filteredData.length}개 성어</div>
