@@ -257,7 +257,7 @@
     function ExamModule({ data, splitData, toggleReview, reviewIds, bookmarks }) {
       const [examStatus, setExamStatus] = useState('config'); 
       const [datasetMode, setDatasetMode] = useState('split');
-      const [filterMode, setFilterMode] = useState('all'); // 'all', 'bookmark', 'review', 'chosung'
+      const [scopeType, setScopeType] = useState('all'); // 'all', 'bookmark', 'review', 'chosung'
       const [chosungFilter, setChosungFilter] = useState('전체');
       const [questionCount, setQuestionCount] = useState(10);
       const [quizList, setQuizList] = useState([]);
@@ -273,7 +273,15 @@
 
       const baseChosungList = ["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 
-      // 필터링된 풀 생성
+      const chosungCounts = useMemo(() => {
+        const counts = {};
+        const activePool = datasetMode === 'split' ? splitData : data;
+        activePool.forEach(item => {
+          counts[item.chosung] = (counts[item.chosung] || 0) + 1;
+        });
+        return counts;
+      }, [datasetMode, data, splitData]);
+
       const targetPool = useMemo(() => {
         let pool = datasetMode === 'split' ? splitData : data.map(item => {
           const hasMean2 = Boolean(item.mean2 && item.mean2.trim() !== '' && item.mean2 !== '-');
@@ -285,15 +293,15 @@
           };
         });
 
-        if (filterMode === 'bookmark') {
+        if (scopeType === 'bookmark') {
           pool = pool.filter(item => bookmarks.includes(item.id));
-        } else if (filterMode === 'review') {
+        } else if (scopeType === 'review') {
           pool = pool.filter(item => reviewIds.includes(item.id));
-        } else if (filterMode === 'chosung' && chosungFilter !== '전체') {
+        } else if (scopeType === 'chosung' && chosungFilter !== '전체') {
           pool = pool.filter(item => item.chosung === chosungFilter);
         }
         return pool;
-      }, [datasetMode, filterMode, chosungFilter, bookmarks, reviewIds, data, splitData]);
+      }, [datasetMode, scopeType, chosungFilter, bookmarks, reviewIds, data, splitData]);
 
       const startExam = (count) => {
         if (targetPool.length === 0) {
@@ -331,7 +339,7 @@
         setCurrentIsCorrect(isCorrect);
         setExamStatus('feedback');
 
-        // 정답인 경우 오답노트에 있었다면 자동으로 제거
+        // 정답 시 오답노트에서 자동 제거
         if (isCorrect && reviewIds.includes(currentQ.id)) {
           toggleReview(currentQ.id);
         }
@@ -356,14 +364,12 @@
         setExamStatus('result');
       };
 
-      // 피드백 상태 진입 시 포커스 강제 부여로 엔터키 이벤트 즉시 캐치
       useEffect(() => {
         if (examStatus === 'feedback' && feedbackBoxRef.current) {
           feedbackBoxRef.current.focus();
         }
       }, [examStatus]);
 
-      // 전역 키보드 엔터 핸들러
       const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -400,7 +406,7 @@
         return (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <h2 className="text-xl font-bold text-slate-900 mb-2">실전 모의고사 설정</h2>
-            <p className="text-sm text-slate-500 mb-6">모드와 범위를 선택하세요. (정답 시 오답노트에서 자동 삭제됩니다)</p>
+            <p className="text-sm text-slate-500 mb-6">출제 방식과 학습 범위를 선택하세요. (정답 시 오답노트에서 자동 삭제)</p>
 
             <div className="mb-6">
               <label className="block font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">출제 방식 선택</label>
@@ -416,32 +422,47 @@
               </div>
             </div>
 
+            {/* 학습 범위 및 초성 선택 구역 조화 */}
             <div className="mb-6">
-              <label className="block font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">학습 범위 / 필터 선택</label>
+              <label className="block font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">학습 범위 및 필터 선택</label>
               <div className="grid grid-cols-3 gap-2 mb-3">
-                <button onClick={() => setFilterMode('all')} className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${filterMode === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                  전체 보기
+                <button onClick={() => setScopeType('all')} className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${scopeType === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                  전체 범위
                 </button>
-                <button onClick={() => setFilterMode('bookmark')} className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${filterMode === 'bookmark' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                <button onClick={() => setScopeType('bookmark')} className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${scopeType === 'bookmark' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                   ⭐ 즐겨찾기만 보기 ({bookmarks.length})
                 </button>
-                <button onClick={() => setFilterMode('review')} className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${filterMode === 'review' ? 'bg-rose-500 text-white border-rose-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                <button onClick={() => setScopeType('review')} className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${scopeType === 'review' ? 'bg-rose-500 text-white border-rose-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                   ❌ 오답노트 풀기 ({reviewIds.length})
                 </button>
               </div>
 
-              {filterMode === 'chosung' && (
-                <div className="flex flex-wrap gap-1.5 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <button onClick={() => setChosungFilter('전체')} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${chosungFilter === '전체' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>전체</button>
-                  {baseChosungList.map(c => (
-                    <button key={c} onClick={() => setChosungFilter(c)} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${chosungFilter === c ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>{c}</button>
-                  ))}
-                </div>
-              )}
+              {/* 되살린 ㄱ~ㅎ 초성 필터 */}
+              <div className="mt-2">
+                <button onClick={() => setScopeType(scopeType === 'chosung' ? 'all' : 'chosung')} className={`w-full py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-between transition-all ${scopeType === 'chosung' ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                  <span>🔤 초성별 골라서 풀기 (ㄱ~ㅎ 선택)</span>
+                  <span>{scopeType === 'chosung' ? '▲ 닫기' : '▼ 펼치기'}</span>
+                </button>
+
+                {scopeType === 'chosung' && (
+                  <div className="flex flex-wrap gap-1.5 p-3 mt-2 bg-slate-50 rounded-xl border border-slate-200">
+                    <button onClick={() => setChosungFilter('전체')} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${chosungFilter === '전체' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>전체</button>
+                    {baseChosungList.map(c => {
+                      const cnt = chosungCounts[c] || 0;
+                      if (cnt === 0) return null;
+                      return (
+                        <button key={c} onClick={() => setChosungFilter(c)} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${chosungFilter === c ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>
+                          {c}({cnt})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mb-8">
-              <label className="block font-bold text-xs text-slate-500 uppercase tracking-wider mb-3">문항 수 (최대: {maxAllCount}문항)</label>
+              <label className="block font-bold text-xs text-slate-500 uppercase tracking-wider mb-3">문항 수 (선택 범위 최대: {maxAllCount}문항)</label>
               <div className="grid grid-cols-4 gap-3">
                 {[10, 20, 50, 999].map(count => (
                   <button key={count} onClick={() => setQuestionCount(count)} className={`py-3.5 px-4 rounded-xl border-2 text-sm font-extrabold transition-all ${questionCount === count ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
@@ -508,7 +529,7 @@
             ) : (
               <div ref={feedbackBoxRef} tabIndex={0} onKeyDown={handleKeyDown} className="text-center py-2 outline-none cursor-pointer">
                 <div className={`text-3xl sm:text-4xl font-black mb-3 ${currentIsCorrect ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {currentIsCorrect ? '⭕ 정답입니다! (오답노트 자동 삭제됨)' : '❌ 틀렸습니다!'}
+                  {currentIsCorrect ? '⭕ 정답입니다! (오답노트 자동 삭제)' : '❌ 틀렸습니다!'}
                 </div>
 
                 {!currentIsCorrect && (
@@ -544,25 +565,37 @@
     // 플래시카드 모듈
     function SwipeModule({ dataset, splitDataset, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
       const [datasetMode, setDatasetMode] = useState('split');
-      const [filterMode, setFilterMode] = useState('all'); // 'all', 'bookmark', 'review'
+      const [scopeType, setScopeType] = useState('all'); // 'all', 'bookmark', 'review', 'chosung'
+      const [chosungFilter, setChosungFilter] = useState('전체');
       const [index, setIndex] = useState(0);
       const [isFlipped, setIsFlipped] = useState(false);
 
       const activePool = datasetMode === 'split' ? splitDataset : dataset;
 
+      const chosungCounts = useMemo(() => {
+        const counts = {};
+        activePool.forEach(item => {
+          counts[item.chosung] = (counts[item.chosung] || 0) + 1;
+        });
+        return counts;
+      }, [activePool]);
+
       const filteredDataset = useMemo(() => {
-        if (filterMode === 'bookmark') {
-          return activePool.filter(item => bookmarks.includes(item.id));
-        } else if (filterMode === 'review') {
-          return activePool.filter(item => reviewIds.includes(item.id));
+        let pool = activePool;
+        if (scopeType === 'bookmark') {
+          pool = pool.filter(item => bookmarks.includes(item.id));
+        } else if (scopeType === 'review') {
+          pool = pool.filter(item => reviewIds.includes(item.id));
+        } else if (scopeType === 'chosung' && chosungFilter !== '전체') {
+          pool = pool.filter(item => item.chosung === chosungFilter);
         }
-        return activePool;
-      }, [activePool, filterMode, bookmarks, reviewIds]);
+        return pool;
+      }, [activePool, scopeType, chosungFilter, bookmarks, reviewIds]);
 
       useEffect(() => {
         setIndex(0);
         setIsFlipped(false);
-      }, [filterMode, datasetMode]);
+      }, [scopeType, chosungFilter, datasetMode]);
 
       const current = filteredDataset[index] || filteredDataset[0];
 
@@ -592,7 +625,7 @@
         return (
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
             <p className="text-slate-500 font-bold mb-3">해당 조건에 일치하는 카드가 없습니다.</p>
-            <button onClick={() => setFilterMode('all')} className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">전체 카드로 보기</button>
+            <button onClick={() => setScopeType('all')} className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">전체 카드로 보기</button>
           </div>
         );
       }
@@ -604,10 +637,33 @@
             <button onClick={() => setDatasetMode('split')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold ${datasetMode === 'split' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`}>전체 뜻 분리</button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <button onClick={() => setFilterMode('all')} className={`py-2 rounded-xl text-xs font-bold border ${filterMode === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>전체보기</button>
-            <button onClick={() => setFilterMode('bookmark')} className={`py-2 rounded-xl text-xs font-bold border ${filterMode === 'bookmark' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>⭐ 즐겨찾기 ({bookmarks.length})</button>
-            <button onClick={() => setFilterMode('review')} className={`py-2 rounded-xl text-xs font-bold border ${filterMode === 'review' ? 'bg-rose-500 text-white border-rose-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>❌ 오답노트 풀기 ({reviewIds.length})</button>
+          {/* 상단 필터 및 되살린 초성 선택 */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <button onClick={() => setScopeType('all')} className={`py-2 rounded-xl text-xs font-bold border ${scopeType === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>전체보기</button>
+            <button onClick={() => setScopeType('bookmark')} className={`py-2 rounded-xl text-xs font-bold border ${scopeType === 'bookmark' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>⭐ 즐겨찾기 ({bookmarks.length})</button>
+            <button onClick={() => setScopeType('review')} className={`py-2 rounded-xl text-xs font-bold border ${scopeType === 'review' ? 'bg-rose-500 text-white border-rose-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>❌ 오답노트 ({reviewIds.length})</button>
+          </div>
+
+          <div className="mb-4">
+            <button onClick={() => setScopeType(scopeType === 'chosung' ? 'all' : 'chosung')} className={`w-full py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-between ${scopeType === 'chosung' ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+              <span>🔤 초성별 골라서 보기 (ㄱ~ㅎ 선택)</span>
+              <span>{scopeType === 'chosung' ? '▲ 닫기' : '▼ 펼치기'}</span>
+            </button>
+
+            {scopeType === 'chosung' && (
+              <div className="flex flex-wrap gap-1 p-2 mt-2 bg-slate-50 rounded-xl border border-slate-200">
+                <button onClick={() => setChosungFilter('전체')} className={`px-2 py-1 rounded text-xs font-bold ${chosungFilter === '전체' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>전체</button>
+                {["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"].map(c => {
+                  const cnt = chosungCounts[c] || 0;
+                  if (cnt === 0) return null;
+                  return (
+                    <button key={c} onClick={() => setChosungFilter(c)} className={`px-2 py-1 rounded text-xs font-bold ${chosungFilter === c ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>
+                      {c}({cnt})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div onClick={() => setIsFlipped(!isFlipped)} className="cursor-pointer min-h-[260px] bg-indigo-50/70 border-2 border-indigo-100 rounded-3xl p-6 flex flex-col justify-between items-center shadow-inner text-center">
@@ -646,19 +702,37 @@
 
     // 전체 열람 모듈
     function DictModule({ data, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
-      const [filterMode, setFilterMode] = useState('all'); // 'all', 'bookmark'
+      const [filterMode, setFilterMode] = useState('all'); // 'all', 'bookmark', 'chosung'
+      const [chosungFilter, setChosungFilter] = useState('전체');
       const [searchQuery, setSearchQuery] = useState('');
+
+      const baseChosungList = ["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+
+      const chosungCounts = useMemo(() => {
+        const counts = {};
+        data.forEach(item => {
+          counts[item.chosung] = (counts[item.chosung] || 0) + 1;
+        });
+        return counts;
+      }, [data]);
 
       const filteredData = useMemo(() => {
         return data.filter(item => {
-          const matchFilter = filterMode === 'all' || (filterMode === 'bookmark' && bookmarks.includes(item.id));
+          let matchFilter = true;
+          if (filterMode === 'bookmark') {
+            matchFilter = bookmarks.includes(item.id);
+          } else if (filterMode === 'chosung' && chosungFilter !== '전체') {
+            matchFilter = item.chosung === chosungFilter;
+          }
+
           const matchSearch = searchQuery.trim() === '' || 
             item.idiom_kr.includes(searchQuery) || 
             item.idiom_cn.includes(searchQuery) || 
             item.mean1.includes(searchQuery);
+
           return matchFilter && matchSearch;
         });
-      }, [data, filterMode, bookmarks, searchQuery]);
+      }, [data, filterMode, chosungFilter, bookmarks, searchQuery]);
 
       return (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
@@ -670,14 +744,39 @@
             className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-600 mb-4"
           />
 
-          <div className="flex gap-2 mb-6">
-            <button onClick={() => setFilterMode('all')} className={`px-4 py-2 rounded-xl text-xs font-bold border ${filterMode === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <button onClick={() => setFilterMode('all')} className={`py-2 rounded-xl text-xs font-bold border ${filterMode === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
               전체 열람 ({data.length})
             </button>
-            <button onClick={() => setFilterMode('bookmark')} className={`px-4 py-2 rounded-xl text-xs font-bold border ${filterMode === 'bookmark' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+            <button onClick={() => setFilterMode('bookmark')} className={`py-2 rounded-xl text-xs font-bold border ${filterMode === 'bookmark' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
               ⭐ 즐겨찾기만 보기 ({bookmarks.length})
             </button>
           </div>
+
+          {/* 되살린 ㄱ~ㅎ 초성 필터 바 */}
+          <div className="mb-6">
+            <button onClick={() => setFilterMode(filterMode === 'chosung' ? 'all' : 'chosung')} className={`w-full py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-between ${filterMode === 'chosung' ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+              <span>🔤 초성별 모아보기 (ㄱ~ㅎ 선택)</span>
+              <span>{filterMode === 'chosung' ? '▲ 닫기' : '▼ 펼치기'}</span>
+            </button>
+
+            {filterMode === 'chosung' && (
+              <div className="flex flex-wrap gap-1.5 p-3 mt-2 bg-slate-50 rounded-xl border border-slate-200">
+                <button onClick={() => setChosungFilter('전체')} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${chosungFilter === '전체' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>전체</button>
+                {baseChosungList.map(c => {
+                  const cnt = chosungCounts[c] || 0;
+                  if (cnt === 0) return null;
+                  return (
+                    <button key={c} onClick={() => setChosungFilter(c)} className={`px-2.5 py-1 rounded-lg text-xs font-bold ${chosungFilter === c ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>
+                      {c}({cnt})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="text-xs text-slate-400 mb-3">총 {filteredData.length}개 성어</div>
 
           <div className="space-y-3">
             {filteredData.map(item => (
@@ -686,6 +785,7 @@
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-black text-lg text-slate-900">{item.idiom_kr}</span>
                     <span className="text-sm text-indigo-600 font-bold">({item.idiom_cn})</span>
+                    <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded">{item.chosung}</span>
                   </div>
                   <p className="text-xs text-slate-700 font-medium">1. {item.mean1}</p>
                   {item.mean2 && item.mean2.trim() !== '' && item.mean2 !== '-' && (
@@ -717,7 +817,7 @@
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
             <div className="text-4xl mb-3">🎉</div>
             <h3 className="font-bold text-slate-800 mb-1">오답노트가 비어 있습니다</h3>
-            <p className="text-xs text-slate-500">모의고사에서 틀린 문항은 자동으로 담기거나 직접 추가할 수 있습니다!</p>
+            <p className="text-xs text-slate-500">모의고사에서 틀린 문항은 자동으로 담기며, 정답을 맞히면 자동으로 비워집니다!</p>
           </div>
         );
       }
