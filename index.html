@@ -1,0 +1,1057 @@
+# hanja_quiz
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { 
+  BookOpen, 
+  Brain, 
+  CheckCircle2, 
+  HelpCircle, 
+  Plus, 
+  Trash2, 
+  Volume2, 
+  RotateCcw, 
+  Award, 
+  Search, 
+  Filter, 
+  Check, 
+  X, 
+  Sparkles,
+  BarChart3,
+  Bookmark,
+  ChevronRight,
+  ChevronLeft,
+  RefreshCw,
+  Edit3,
+  Flame,
+  User,
+  LogOut,
+  LogIn,
+  Layers,
+  FileCheck,
+  Zap,
+  ArrowRight,
+  AlertCircle,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+
+// ==========================================
+// 100개 사자성어 데이터셋 (User Dataset)
+// ==========================================
+const RAW_SAJASEONGEO = [
+  { id: 1, chosung: 'ㄱ', idiom_kr: '가렴주구', idiom_cn: '苛斂誅求', mean1: '가혹하게 세금을 거둠', mean2: '백성의 제물을 억지로 뺏음' },
+  { id: 2, chosung: 'ㄱ', idiom_kr: '각골난망', idiom_cn: '刻骨難忘', mean1: '뼈에 새겨 놓을 만큼 잊을 수 없음', mean2: '고통스러운 원한' },
+  { id: 3, chosung: 'ㄱ', idiom_kr: '감언이설', idiom_cn: '甘言利說', mean1: '남의 비위를 맞추거나 이득을 약속하는 말', mean2: '상대방을 현혹시키기 위해서 꾸민 달콤한 말과 이득을 내세워 속이는 말' },
+  { id: 4, chosung: 'ㄱ', idiom_kr: '감탄고토', idiom_cn: '甘呑苦吐', mean1: '달면 삼키고 쓰면 뱉음', mean2: '비위에 맞으면 좋아하고 맞지 않으면 싫어함' },
+  { id: 5, chosung: 'ㄱ', idiom_kr: '갑론을박', idiom_cn: '甲論乙駁', mean1: '갑이 논하면 을이 논박함', mean2: '서로 논란하고 반박함을 이르는 말' },
+  { id: 6, chosung: 'ㄱ', idiom_kr: '고립무원', idiom_cn: '孤立無援', mean1: '고립되어 도움을 받을 데가 없음', mean2: '' },
+  { id: 7, chosung: 'ㄱ', idiom_kr: '고진감래', idiom_cn: '苦盡甘來', mean1: '쓴 것이 다하면 단 것이 옴', mean2: '고생 끝에 낙이 옴' },
+  { id: 8, chosung: 'ㄱ', idiom_kr: '괄목상대', idiom_cn: '刮目相對', mean1: '눈을 비비고 상대를 대함', mean2: '남의 학식이나 재주가 놀라운 정도로 부쩍 향상됨을 뜻함' },
+  { id: 9, chosung: 'ㄱ', idiom_kr: '구사일생', idiom_cn: '九死一生', mean1: '구사일생 죽을 고비를 여러 차례 넘김', mean2: '겨우 살아남음을 이르는 말' },
+  { id: 10, chosung: 'ㄱ', idiom_kr: '구우일모', idiom_cn: '九牛一毛', mean1: '아홉 마리 소에 털 한 가닥이 빠진 정도', mean2: '아주 큰 물건 속에 있는 아주 작은 물건 (대단히 많은 것 중의 아주 작은 것)' },
+  { id: 11, chosung: 'ㄱ', idiom_kr: '견강부회', idiom_cn: '牽強附會', mean1: '이치에 맞지 않는 말을 억지로 끌어 붙임', mean2: '자기의 주장에 맞도록 함' },
+  { id: 12, chosung: 'ㄱ', idiom_kr: '결초보은', idiom_cn: '結草報恩', mean1: '무슨 짓을 하여서든지 잊지 않음', mean2: '은혜에 보답함' },
+  { id: 13, chosung: 'ㄱ', idiom_kr: '경거망동', idiom_cn: '輕擧妄動', mean1: '가볍고 망령되게 행동함', mean2: '' },
+  { id: 14, chosung: 'ㄱ', idiom_kr: '권불십년', idiom_cn: '權不十年', mean1: '아무리 막강한 권력도 10년 못 감', mean2: '영원할 것 같지만 오래가지 못해 결국은 무너진다는 의미' },
+  { id: 15, chosung: 'ㄱ', idiom_kr: '기사회생', idiom_cn: '起死回生', mean1: '죽을 고비에서 벗어남', mean2: '다시 살아남' },
+  { id: 16, chosung: 'ㄱ', idiom_kr: '기호지세', idiom_cn: '騎虎之勢', mean1: '범에 올라탄 기세', mean2: '이미 시작한 일이라 도중에 그만둘 수 없는 상황' },
+  { id: 17, chosung: 'ㄴ', idiom_kr: '내우외환', idiom_cn: '內憂外患', mean1: '내부에서 일어나는 근심과 외부로부터 받는 근심', mean2: '나라 안팎의 여러 가지 근심 걱정' },
+  { id: 18, chosung: 'ㄴ', idiom_kr: '노심초사', idiom_cn: '勞心焦思', mean1: '몹시 마음을 씀', mean2: '애를 태움' },
+  { id: 19, chosung: 'ㄷ', idiom_kr: '대경실색', idiom_cn: '大驚失色', mean1: '크게 놀라 얼굴빛을 잃음', mean2: '낯빛이 하얗게 질릴 정도로 몹시 놀란 모습' },
+  { id: 20, chosung: 'ㄷ', idiom_kr: '동문서답', idiom_cn: '東問西答', mean1: '동쪽을 묻자 서쪽을 답함', mean2: '묻는 말에 대하여 전혀 엉뚱한 대답을 가리키는 말' },
+  { id: 21, chosung: 'ㄷ', idiom_kr: '동병상련', idiom_cn: '同病相憐', mean1: '같은 병자끼리 가엾게 여김', mean2: '어려운 처지에 있는 사람끼리 서로 불쌍히 여겨 동정하고 도움' },
+  { id: 22, chosung: 'ㄷ', idiom_kr: '동분서주', idiom_cn: '東奔西走', mean1: '동쪽으로 뛰고 서쪽으로 뜀', mean2: '이리저리 몹시 바쁘게 돌아다님' },
+  { id: 23, chosung: 'ㄷ', idiom_kr: '동상이몽', idiom_cn: '同牀異夢', mean1: '같은 자리에 자면서 다른 꿈을 꿈', mean2: '겉으로는 같이 행동하면서 속으로는 다른 생각을 하는 것' },
+  { id: 24, chosung: 'ㄷ', idiom_kr: '두문불출', idiom_cn: '杜門不出', mean1: '문을 닫고 밖으로 나가치 않음', mean2: '집안에만 박혀 있으면서 결코 바깥출입을 하지 않는 모습' },
+  { id: 25, chosung: 'ㅁ', idiom_kr: '마이동풍', idiom_cn: '馬耳東風', mean1: '남의 비평이나 의견을 조금도 귀담아 듣지 아니함', mean2: '흘려버림을 이름' },
+  { id: 26, chosung: 'ㅁ', idiom_kr: '망양지탄', idiom_cn: '亡羊之歎', mean1: '달아난 양을 찾다가 여러 갈래의 길 앞에서 길을 잃음', mean2: '방침이 많아 할 바를 모르게 됨' },
+  { id: 27, chosung: 'ㅁ', idiom_kr: '맥수지탄', idiom_cn: '麥秀之歎', mean1: '고국의 멸망을 안타까워함', mean2: '' },
+  { id: 28, chosung: 'ㅁ', idiom_kr: '무위도식', idiom_cn: '無爲徒食', mean1: '하는 일 없이 헛되이 먹기만 함', mean2: '' },
+  { id: 29, chosung: 'ㅁ', idiom_kr: '면종복배', idiom_cn: '面從腹背', mean1: '겉으로는 순종하는 체함', mean2: '속으로는 딴 마음을 먹음' },
+  { id: 30, chosung: 'ㅁ', idiom_kr: '명재경각', idiom_cn: '命在頃刻', mean1: '목숨이 경각에 달려 있음', mean2: '목숨이 눈 깜짝할 사이에 사라질 수도 있는 위험한 상황' },
+  { id: 31, chosung: 'ㅁ', idiom_kr: '목불인견', idiom_cn: '目不忍見', mean1: '눈으로 볼 수 없을 정도로 비참함', mean2: '안타까운 모습' },
+  { id: 32, chosung: 'ㅁ', idiom_kr: '반신반의', idiom_cn: '半信半疑', mean1: '믿으면서도 한편으로는 의심함', mean2: '' },
+  { id: 33, chosung: 'ㅁ', idiom_kr: '방약무인', idiom_cn: '傍若無人', mean1: '곁에 사람이 없는 것처럼 행동함', mean2: '주위 사람을 의식하지 않고 제멋대로 행동하는 것' },
+  { id: 34, chosung: 'ㅁ', idiom_kr: '백년하청', idiom_cn: '百年河淸', mean1: '백 년을 기다린다 해도 황하의 흐린 물은 맑아지지 않음', mean2: '오랫동안 기다려도 바라는 것이 이루어질 수 없음을 이르는 말' },
+  { id: 35, chosung: 'ㅁ', idiom_kr: '백척간두', idiom_cn: '百尺竿頭', mean1: '백 척 되는 장대의 꼭대기', mean2: '위급하고 어려운 상황' },
+  { id: 36, chosung: 'ㅁ', idiom_kr: '부화뇌동', idiom_cn: '附和雷同', mean1: '우레 소리에 맞춰 함께함', mean2: '자신의 뚜렷한 소신 없이 그저 남이 하는 대로 따라가는 것' },
+  { id: 37, chosung: 'ㅁ', idiom_kr: '분기탱천', idiom_cn: '憤氣撑天', mean1: '분한 마음이 하늘을 찌를 듯함', mean2: '격렬하게 북받쳐 오름' },
+  { id: 38, chosung: 'ㅁ', idiom_kr: '비분강개', idiom_cn: '悲憤慷慨', mean1: '슬프고 분한 느낌이 마음에 가득 차 있음', mean2: '' },
+  { id: 39, chosung: 'ㅅ', idiom_kr: '사고무친', idiom_cn: '四顧無親', mean1: '사방을 둘러봐도 의지할만한 사람이 도무지 없음', mean2: '' },
+  { id: 40, chosung: 'ㅅ', idiom_kr: '사면초가', idiom_cn: '四面楚歌', mean1: '사방에서 들려오는 초나라 노래', mean2: '적에게 포위되거나 몹시 어려운 일을 당하여 극복할 방법이 전혀 없는 곤경' },
+  { id: 41, chosung: 'ㅅ', idiom_kr: '사필귀정', idiom_cn: '事必歸正', mean1: '처음에는 시비곡직을 가리지 못하여 그릇되더라도 모든 일은 결국에 가서는 반드시 정리로 돌아감', mean2: '결국 모든 일은 바른 결과로 돌아간다는 의미' },
+  { id: 42, chosung: 'ㅅ', idiom_kr: '삼고초려', idiom_cn: '三顧草廬', mean1: '초가집을 세 번 찾아감', mean2: '훌륭한 인물을 모시기 위해 최선을 다하는 모습' },
+  { id: 43, chosung: 'ㅅ', idiom_kr: '삼십육계', idiom_cn: '三十六計', mean1: '도망가야 할 때에는 기회를 보고 무조건 도망을 쳐서 몸을 안전하게 하는 일', mean2: '병법상의 최상책이라는 뜻' },
+  { id: 44, chosung: 'ㅅ', idiom_kr: '상전벽해', idiom_cn: '桑田碧海', mean1: '뽕나무밭이 푸른 바다가 되었다', mean2: '세상의 모든 일이 엄청나게 변해버린 것' },
+  { id: 45, chosung: 'ㅅ', idiom_kr: '새옹지마', idiom_cn: '塞翁之馬', mean1: '세상일은 변화가 많아 어느 것이 화가 되고 어느 것이 복이 될지 예측하기 어려움', mean2: '재앙도 슬퍼할 게 못되고 복도 기뻐할 것이 아님' },
+  { id: 46, chosung: 'ㅅ', idiom_kr: '선견지명', idiom_cn: '先見之明', mean1: '미래에 전개될 일을 남보다 먼저 예견하는 총명함', mean2: '' },
+  { id: 47, chosung: 'ㅅ', idiom_kr: '설상가상', idiom_cn: '雪上加霜', mean1: '눈 위에 또 서리가 내린다', mean2: '어려운 일이 겹침 또는 환난이 거듭됨을 비유' },
+  { id: 48, chosung: 'ㅅ', idiom_kr: '설왕설래', idiom_cn: '說往說來', mean1: '말들이 왔다 갔다 함', mean2: '서로의 의견이나 입장이 달라 말로 옥신각신하는 모습' },
+  { id: 49, chosung: 'ㅅ', idiom_kr: '수구초심', idiom_cn: '首丘初心', mean1: '여우가 죽을 때 제가 살던 언덕으로 머리를 둔다', mean2: '고향이나 근본을 잊지 않는다는 의미' },
+  { id: 50, chosung: 'ㅅ', idiom_kr: '수주대토', idiom_cn: '守株待兔', mean1: '나무 그루터기를 지키며 토끼를 기다린다', mean2: '실효성 없는 기대는 공연히 시간만 허비하고 우연한 행운을 기대하는 어리석음' },
+  { id: 51, chosung: 'ㅅ', idiom_kr: '순망치한', idiom_cn: '脣亡齒寒', mean1: '입술이 없으면 이가 시리다', mean2: '서로 떨어질 수 없는 밀접한 관계' },
+  { id: 52, chosung: 'ㅅ', idiom_kr: '식자우환', idiom_cn: '識字憂患', mean1: '글자를 아는 것이 오히려 걱정을 끼친다', mean2: '쓸데없는 걱정이 많음' },
+  { id: 53, chosung: 'ㅇ', idiom_kr: '아전인수', idiom_cn: '我田引水', mean1: '자기 논에 물 대기', mean2: '자기에게만 이롭게 되도록 생각하거나 행동함' },
+  { id: 54, chosung: 'ㅇ', idiom_kr: '안분지족', idiom_cn: '安分知足', mean1: '자기 분수에 만족함', mean2: '다른 데 마음을 두지 아니함' },
+  { id: 55, chosung: 'ㅇ', idiom_kr: '안하무인', idiom_cn: '眼下無人', mean1: '눈 아래에 사람이 없다', mean2: '교만하여 남을 업신여김' },
+  { id: 56, chosung: 'ㅇ', idiom_kr: '어불성설', idiom_cn: '語不成說', mean1: '말이 이치에 이루지 못함', mean2: '말이 전혀 사리에 맞지 않음' },
+  { id: 57, chosung: 'ㅇ', idiom_kr: '연목구어', idiom_cn: '緣木求魚', mean1: '나무에서 물고기를 구한다', mean2: '목적과 수단이 일치하지 않아 성공이 불가능함' },
+  { id: 58, chosung: 'ㅇ', idiom_kr: '오리무중', idiom_cn: '五里霧中', mean1: '무슨 일에 대하여 방향이나 상황을 알 길이 없음', mean2: '일의 갈피를 잡기 어려움' },
+  { id: 59, chosung: 'ㅇ', idiom_kr: '오매불망', idiom_cn: '寤寐不忘', mean1: '자나 깨나 잊지 못함', mean2: '사랑하는 사람을 그리워하여 잠 못 들거나 생각으로 밤을 지새움' },
+  { id: 60, chosung: 'ㅇ', idiom_kr: '오월동주', idiom_cn: '吳越同舟', mean1: '서로 미워하면서도 공통의 어려움이나 이해에 대해서는 협력함', mean2: '적대적 관계이지만 협력하는 경우' },
+  { id: 61, chosung: 'ㅇ', idiom_kr: '온고지신', idiom_cn: '溫故知新', mean1: '옛것을 익히고 그것을 미루어서 새로운 것을 앎', mean2: '온고이지신과 같은 의미' },
+  { id: 62, chosung: 'ㅇ', idiom_kr: '우후죽순', idiom_cn: '雨後竹筍', mean1: '비가 온 뒤에 솟는 죽순', mean2: '어떤 일이 일시에 많이 일어남' },
+  { id: 63, chosung: 'ㅇ', idiom_kr: '유구무언', idiom_cn: '有口無言', mean1: '입은 있으나 할 말이 없음', mean2: '변명하거나 해명할 길이 없음' },
+  { id: 64, chosung: 'ㅇ', idiom_kr: '이심전심', idiom_cn: '以心傳心', mean1: '마음과 마음으로 서로 뜻이 통함', mean2: '문자나 언어 없이 남을 깨닫게 함' },
+  { id: 65, chosung: 'ㅇ', idiom_kr: '일거양득', idiom_cn: '一舉兩得', mean1: '한 가지의 일로 두 가지의 이득을 보는 것', mean2: '' },
+  { id: 66, chosung: 'ㅇ', idiom_kr: '일벌백계', idiom_cn: '一罰百戒', mean1: '한 사람을 벌함으로써 만인에게 경계가 되도록 함', mean2: '' },
+  { id: 67, chosung: 'ㅇ', idiom_kr: '일장춘몽', idiom_cn: '一場春夢', mean1: '인생의 허무함을 한바탕의 봄꿈에 비유', mean2: '' },
+  { id: 68, chosung: 'ㅇ', idiom_kr: '일진일퇴', idiom_cn: '一進一退', mean1: '한 번 나아감과 물러섬', mean2: '좋았다가 나빠졌다 함' },
+  { id: 69, chosung: 'ㅇ', idiom_kr: '일희일비', idiom_cn: '一喜一悲', mean1: '한편으로는 기뻐하고 한편으로는 슬퍼함', mean2: '기쁨과 슬픔이 번갈아 일어남' },
+  { id: 70, chosung: 'ㅈ', idiom_kr: '자가당착', idiom_cn: '自家撞着', mean1: '스스로 부딪치기도 하고 붙기도 함', mean2: '한 사람의 말과 행동이 서로 앞뒤가 맞지 않는 모습' },
+  { id: 71, chosung: 'ㅈ', idiom_kr: '자승자박', idiom_cn: '自繩自縛', mean1: '자기가 자기를 묶는다는 뜻', mean2: '자기 언행으로 인해 자신이 꼼짝 못하게 되는 일' },
+  { id: 72, chosung: 'ㅈ', idiom_kr: '적반하장', idiom_cn: '賊反荷杖', mean1: '도둑이 도리어 몽둥이를 든다', mean2: '잘못한 사람이 도리어 잘한 사람을 나무라는 경우' },
+  { id: 73, chosung: 'ㅈ', idiom_kr: '전인미답', idiom_cn: '前人未踏', mean1: '지금까지 아무도 손을 대거나 발을 디딘 일이 없음', mean2: '' },
+  { id: 74, chosung: 'ㅈ', idiom_kr: '전전긍긍', idiom_cn: '戰戰兢兢', mean1: '어떤 위기감에 떠는 심정을 비유', mean2: '' },
+  { id: 75, chosung: 'ㅈ', idiom_kr: '전전반측', idiom_cn: '輾轉反側', mean1: '수레바퀴가 한없이 돌며 옆으로 뒤척인다', mean2: '근심과 걱정으로 잠을 이루지 못함을 비유' },
+  { id: 76, chosung: 'ㅈ', idiom_kr: '전화위복', idiom_cn: '轉禍爲福', mean1: '화가 바뀌어 오히려 복이 된다', mean2: '끊임없는 노력과 강인한 의지로 불행을 행복으로 바꾸는 것' },
+  { id: 77, chosung: 'ㅈ', idiom_kr: '절치부심', idiom_cn: '截齒腐心', mean1: '이를 갈고 마음을 썩힘', mean2: '대단히 분하게 여기고 마음을 썩임' },
+  { id: 78, chosung: 'ㅈ', idiom_kr: '점입가경', idiom_cn: '漸入佳境', mean1: '가면 갈수록 경치가 더해진다', mean2: '일이 점점 더 재미있는 지경으로 돌아가는 것을 비유' },
+  { id: 79, chosung: 'ㅈ', idiom_kr: '조삼모사', idiom_cn: '朝三暮四', mean1: '먹이를 아침에 3개, 저녁에 4개 준다 하여 화를 내다가 바꾼 것', mean2: '간사한 꾀로 남을 속여 희롱함을 이르는 말' },
+  { id: 80, chosung: 'ㅈ', idiom_kr: '좌불안석', idiom_cn: '坐不安席', mean1: '마음이 불안하거나 걱정스러워서 한곳에 가만히 앉아 있지 못함', mean2: '안절부절못하는 모양' },
+  { id: 81, chosung: 'ㅈ', idiom_kr: '중구난방', idiom_cn: '衆口難防', mean1: '여러 사람이 각기 말하는 의견이 봇물 터지듯 쏟아져 나옴', mean2: '' },
+  { id: 82, chosung: 'ㅈ', idiom_kr: '진퇴양난', idiom_cn: '進退兩難', mean1: '나아갈 수도 물러설 수도 없는 공지에 빠짐', mean2: '' },
+  { id: 83, chosung: 'ㅈ', idiom_kr: '진퇴유곡', idiom_cn: '進退維谷', mean1: '앞으로도 뒤로도 나아가거나 물러서지 못함', mean2: '' },
+  { id: 84, chosung: 'ㅊ', idiom_kr: '천우신조', idiom_cn: '天佑神助', mean1: '도저히 이루어질 수 없다고 여긴 일이 이루어짐', mean2: '힘든 상황에서 극적으로 벗어나는 경우' },
+  { id: 85, chosung: 'ㅊ', idiom_kr: '청천벽력', idiom_cn: '靑天霹靂', mean1: '맑게 갠 하늘에서 갑자기 떨어지는 벼락', mean2: '돌발적인 사태나 사변' },
+  { id: 86, chosung: 'ㅊ', idiom_kr: '청출어람', idiom_cn: '靑出於藍', mean1: '제자가 스승보다 나은 것을 비유', mean2: '' },
+  { id: 87, chosung: 'ㅊ', idiom_kr: '침소봉대', idiom_cn: '針小棒大', mean1: '바늘만한 것을 몽둥이만 하다고 말함', mean2: '작은 일을 크게 과장하여 말함' },
+  { id: 88, chosung: 'ㅌ', idiom_kr: '탁상공론', idiom_cn: '卓上空論', mean1: '탁자 위에서만 펼치는 헛된 논설', mean2: '실현성이 없는 허황된 이론' },
+  { id: 89, chosung: 'ㅌ', idiom_kr: '토사구팽', idiom_cn: '兎死狗烹', mean1: '토끼가 죽으면 사냥개는 잡혀서 삶아진다', mean2: '목적을 달성하고 나면 그 목적에 이용된 도구나 사람은 필요 없게 되어 제거됨' },
+  { id: 90, chosung: 'ㅍ', idiom_kr: '풍수지탄', idiom_cn: '風樹之歎', mean1: '바람이 나무를 흔들 듯 자식이 효도하려 할 때 부모는 이미 죽어 효행을 다하지 못하는 슬픔', mean2: '' },
+  { id: 91, chosung: 'ㅍ', idiom_kr: '표리부동', idiom_cn: '表裏不同', mean1: '겉과 안이 같지 않음', mean2: '겉과 속이 다른 음흉한 품성' },
+  { id: 92, chosung: 'ㅎ', idiom_kr: '함구무언', idiom_cn: '緘口無言', mean1: '입을 다물고 아무런 말이 없음', mean2: '' },
+  { id: 93, chosung: 'ㅎ', idiom_kr: '허장성세', idiom_cn: '虛張聲勢', mean1: '헛된 목소리의 기세만 높음', mean2: '실력이 없으면서도 허세로만 떠벌림' },
+  { id: 94, chosung: 'ㅎ', idiom_kr: '호가호위', idiom_cn: '狐假虎威', mean1: '여우가 호랑이의 위세를 빌려 호기를 부림', mean2: '남의 세력을 빌려 위세를 부림' },
+  { id: 95, chosung: 'ㅎ', idiom_kr: '혼비백산', idiom_cn: '魂飛魄散', mean1: '넋이 날아가고 넋이 흩어짐', mean2: '몹시 놀라 어찌할 바를 모름' },
+  { id: 96, chosung: 'ㅎ', idiom_kr: '화룡점정', idiom_cn: '畫龍點睛', mean1: '용을 그린 다음 마지막으로 눈동자를 그린다', mean2: '가장 요긴한 부분을 마치어 일을 끝냄을 이르는 말' },
+  { id: 97, chosung: 'ㅎ', idiom_kr: '환골탈태', idiom_cn: '換骨奪胎', mean1: '뼈대를 바꾸어 끼고 태를 바꾸어 쓴다', mean2: '사람이 보다 나은 방향으로 변하여 전혀 딴사람처럼 됨' },
+  { id: 98, chosung: 'ㅎ', idiom_kr: '회자정리', idiom_cn: '會者定離', mean1: '만나면 언젠가는 헤어지게 되어 있다', mean2: '' },
+  { id: 99, chosung: 'ㅎ', idiom_kr: '후안무치', idiom_cn: '厚顔無恥', mean1: '뻔뻔스러워 부끄러워할 줄을 모름', mean2: '' },
+  { id: 100, chosung: 'ㅎ', idiom_kr: '흥진비래', idiom_cn: '興盡悲來', mean1: '즐거운 일이 지나가면 슬픈 일이 닥쳐온다', mean2: '' }
+];
+
+// 한글 한글자의 초성 추출 보조 함수
+function getChosungString(str) {
+  const CHOSUNG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  let result = '';
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i) - 44032;
+    if (code >= 0 && code <= 11172) {
+      result += CHOSUNG[Math.floor(code / 588)];
+    } else {
+      result += str.charAt(i);
+    }
+  }
+  return result;
+}
+
+export default function App() {
+  // Auth state
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('sajamaster_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [loginInput, setLoginInput] = useState('');
+
+  // Storage states: bookmarks & reviewIds
+  const [bookmarks, setBookmarks] = useState(() => {
+    const saved = localStorage.getItem('sajamaster_bookmarks');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [reviewIds, setReviewIds] = useState(() => {
+    const saved = localStorage.getItem('sajamaster_review');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Active Tab: 'exam' | 'swipe' | 'dict' | 'review'
+  const [activeTab, setActiveTab] = useState('exam');
+
+  // LocalStorage Sync
+  useEffect(() => {
+    localStorage.setItem('sajamaster_bookmarks', JSON.stringify(bookmarks));
+  }, [bookmarks]);
+
+  useEffect(() => {
+    localStorage.setItem('sajamaster_review', JSON.stringify(reviewIds));
+  }, [reviewIds]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('sajamaster_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('sajamaster_user');
+    }
+  }, [user]);
+
+  // Auth Handlers
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (!loginInput.trim()) return;
+    setUser({ name: loginInput.trim(), loggedInAt: new Date().toLocaleDateString() });
+    setLoginInput('');
+    setShowAuthModal(false);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
+  const toggleBookmark = (id) => {
+    setBookmarks(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleReview = (id) => {
+    setReviewIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+      
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('exam')}>
+            <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-blue-200">
+              <Brain className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="font-extrabold text-xl tracking-tight text-slate-900 leading-none">사자성어 마스터 Pro</h1>
+              <span className="text-xs text-blue-600 font-bold">수행평가 100선 모의고사</span>
+            </div>
+          </div>
+
+          {/* User Auth Section */}
+          <div className="flex items-center gap-3">
+            {user ? (
+              <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                  {user.name.charAt(0)}
+                </div>
+                <span className="text-xs font-bold text-slate-700 hidden sm:inline">{user.name} 님</span>
+                <button
+                  onClick={handleLogout}
+                  className="p-1 text-slate-400 hover:text-rose-600 transition-colors ml-1"
+                  title="로그아웃"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl transition-all border border-slate-200"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>로그인 / 기록동기화</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 flex flex-col">
+
+        {/* Navigation Tabs */}
+        <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200/80 mb-6 flex overflow-x-auto gap-1">
+          {[
+            { id: 'exam', label: '수행평가 모의시험', icon: FileCheck },
+            { id: 'swipe', label: '스와이프 암기', icon: Layers },
+            { id: 'dict', label: '전체 성어 열람 (100)', icon: BookOpen },
+            { id: 'review', label: `오답 & 찜 (${reviewIds.length + bookmarks.length})`, icon: Bookmark }
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+                  isActive 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* TAB 1: MOCK EXAM MODE (PRIMARY FOCUS) */}
+        {activeTab === 'exam' && (
+          <ExamModule 
+            dataset={RAW_SAJASEONGEO} 
+            toggleReview={toggleReview} 
+            reviewIds={reviewIds}
+            toggleBookmark={toggleBookmark}
+            bookmarks={bookmarks}
+          />
+        )}
+
+        {/* TAB 2: SWIPE CARDS */}
+        {activeTab === 'swipe' && (
+          <SwipeModule 
+            dataset={RAW_SAJASEONGEO} 
+            toggleReview={toggleReview}
+            reviewIds={reviewIds}
+            toggleBookmark={toggleBookmark}
+            bookmarks={bookmarks}
+          />
+        )}
+
+        {/* TAB 3: DICTIONARY TABLE */}
+        {activeTab === 'dict' && (
+          <DictModule 
+            dataset={RAW_SAJASEONGEO} 
+            toggleReview={toggleReview}
+            reviewIds={reviewIds}
+            toggleBookmark={toggleBookmark}
+            bookmarks={bookmarks}
+          />
+        )}
+
+        {/* TAB 4: WRONG ANSWERS & BOOKMARKS */}
+        {activeTab === 'review' && (
+          <ReviewModule 
+            dataset={RAW_SAJASEONGEO} 
+            toggleReview={toggleReview}
+            reviewIds={reviewIds}
+            toggleBookmark={toggleBookmark}
+            bookmarks={bookmarks}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
+      </main>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="font-extrabold text-slate-900 text-base">로그인 / 닉네임 설정</h3>
+              <button onClick={() => setShowAuthModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              기본 게스트 상태에서도 모든 성적 및 오답노트가 브라우저에 저장됩니다. 닉네임을 설정하여 나만의 학습 로그를 관리하세요.
+            </p>
+            <form onSubmit={handleLogin} className="space-y-3">
+              <input
+                type="text"
+                required
+                placeholder="사용할 닉네임 입력 (예: 국어만점자)"
+                value={loginInput}
+                onChange={(e) => setLoginInput(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+              />
+              <button
+                type="submit"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md transition-all"
+              >
+                시작하기
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// ==========================================
+// EXAM MODULE (수행평가 모의시험)
+// ==========================================
+function ExamModule({ dataset, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
+  const [examStatus, setExamStatus] = useState('config'); // 'config' | 'testing' | 'result'
+  const [questionCount, setQuestionCount] = useState(20);
+  const [quizList, setQuizList] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [userAnswer, setUserAnswer] = useState('');
+  const [userAnswers, setUserAnswers] = useState({}); // { questionIdx: answerStr }
+  const [showHintChosung, setShowHintChosung] = useState(false);
+  const [showHintHanja, setShowHintHanja] = useState(false);
+  
+  // Timer & Results
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerRef = useRef(null);
+
+  // Start Exam Setup
+  const startExam = (count) => {
+    // Pick random questions from dataset
+    const shuffled = [...dataset].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, count === 100 ? 100 : count).map((item, idx) => {
+      // Pick either mean1 or mean2 (if mean2 exists)
+      const useMean2 = item.mean2 && Math.random() > 0.5;
+      const promptMean = useMean2 ? item.mean2 : item.mean1;
+      return {
+        ...item,
+        promptMean,
+        promptType: useMean2 ? '뜻 2 (B)' : '뜻 1 (A)'
+      };
+    });
+
+    setQuizList(selected);
+    setQuestionCount(selected.length);
+    setCurrentIndex(0);
+    setUserAnswers({});
+    setUserAnswer('');
+    setShowHintChosung(false);
+    setShowHintHanja(false);
+    setElapsedTime(0);
+    setExamStatus('testing');
+
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setElapsedTime(prev => prev + 1);
+    }, 1000);
+  };
+
+  // Submit Answer for current question
+  const handleAnswerSubmit = (e) => {
+    e.preventDefault();
+    const updated = { ...userAnswers, [currentIndex]: userAnswer.trim() };
+    setUserAnswers(updated);
+
+    setShowHintChosung(false);
+    setShowHintHanja(false);
+
+    if (currentIndex + 1 < quizList.length) {
+      setCurrentIndex(currentIndex + 1);
+      setUserAnswer(userAnswers[currentIndex + 1] || '');
+    } else {
+      // Finish Exam
+      finishExam(updated);
+    }
+  };
+
+  const finishExam = (finalAnswers = userAnswers) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setUserAnswers(finalAnswers);
+    setExamStatus('result');
+  };
+
+  // Calculation for results
+  const scoreResult = useMemo(() => {
+    if (examStatus !== 'result') return { correctCount: 0, percentage: 0, details: [] };
+    let correct = 0;
+    const details = quizList.map((item, idx) => {
+      const ans = (finalAnswers[idx] || '').replace(/\s+/g, '');
+      const target = item.idiom_kr.replace(/\s+/g, '');
+      const isCorrect = ans === target;
+      if (isCorrect) correct++;
+      return {
+        ...item,
+        userAns: finalAnswers[idx] || '(미응답)',
+        isCorrect
+      };
+    });
+    return {
+      correctCount: correct,
+      percentage: Math.round((correct / quizList.length) * 100),
+      details
+    };
+  }, [examStatus, quizList, userAnswers]);
+
+  const finalAnswers = userAnswers;
+
+  // Add all wrong answers to Review note automatically or manually
+  const addAllWrongToReview = () => {
+    scoreResult.details.forEach(item => {
+      if (!item.isCorrect && !reviewIds.includes(item.id)) {
+        toggleReview(item.id);
+      }
+    });
+  };
+
+  // Cleanup Timer
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  // Format Timer Text
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins > 0 ? `${mins}분 ` : ''}${secs}초`;
+  };
+
+  if (examStatus === 'config') {
+    return (
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl p-8 max-w-2xl mx-auto w-full text-center space-y-6">
+        <div className="inline-flex p-3 bg-blue-50 text-blue-600 rounded-2xl mb-2">
+          <FileCheck className="w-10 h-10" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">수행평가 대비 실전 모의고사</h2>
+        <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
+          실제 수행평가 시험 조건과 동일하게 <span className="font-bold text-slate-800">뜻 1 또는 뜻 2 중 임의의 뜻 하나</span>를 보고, 정답 <span className="font-bold text-blue-600">한글 사자성어 4글자</span>를 직접 입력하는 방식입니다.
+        </p>
+
+        <div className="space-y-3 pt-2">
+          <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-wider">응시할 문항 수를 선택하세요</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[10, 20, 50, 100].map(count => (
+              <button
+                key={count}
+                onClick={() => setQuestionCount(count)}
+                className={`py-3.5 px-4 rounded-2xl border-2 text-sm font-extrabold transition-all ${
+                  questionCount === count 
+                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md shadow-blue-100'
+                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                {count === 100 ? '전체 100문항' : `${count}문항`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => startExam(questionCount)}
+          className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold rounded-2xl text-base shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+        >
+          <Zap className="w-5 h-5 fill-current" />
+          <span>모의고사 시작하기 ({questionCount}문제)</span>
+        </button>
+      </div>
+    );
+  }
+
+  if (examStatus === 'testing') {
+    const currentQ = quizList[currentIndex];
+
+    return (
+      <div className="max-w-2xl mx-auto w-full space-y-4">
+        {/* Exam Top Bar */}
+        <div className="bg-white px-6 py-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="bg-blue-600 text-white text-xs font-black px-3 py-1 rounded-full">
+              {currentIndex + 1} / {quizList.length}
+            </span>
+            <span className="text-xs font-bold text-slate-400 hidden sm:inline">[{currentQ?.promptType}]</span>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs font-extrabold text-slate-600">
+            <span>⏱️ {formatTime(elapsedTime)}</span>
+            <button
+              onClick={() => finishExam()}
+              className="text-rose-600 hover:underline"
+            >
+              시험 종료
+            </button>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+          <div 
+            className="bg-blue-600 h-full transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / quizList.length) * 100}%` }}
+          ></div>
+        </div>
+
+        {/* Question Card */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl p-8 space-y-6">
+          <div className="text-center space-y-3 my-2">
+            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+              질문 (뜻을 보고 사자성어 제출)
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug px-2">
+              "{currentQ?.promptMean}"
+            </h3>
+          </div>
+
+          {/* Hint Controls */}
+          <div className="flex justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowHintChosung(!showHintChosung)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-bold border transition-all ${
+                showHintChosung ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              💡 초성 힌트 {showHintChosung ? `: ${getChosungString(currentQ?.idiom_kr)}` : ''}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowHintHanja(!showHintHanja)}
+              className={`text-xs px-3 py-1.5 rounded-xl font-bold border transition-all ${
+                showHintHanja ? 'bg-indigo-100 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              漢字 한자 힌트 {showHintHanja ? `: ${currentQ?.idiom_cn}` : ''}
+            </button>
+          </div>
+
+          {/* Answer Form */}
+          <form onSubmit={handleAnswerSubmit} className="space-y-4 pt-2">
+            <input
+              type="text"
+              required
+              maxLength={10}
+              autoFocus
+              placeholder="사자성어 입력 (예: 가렴주구)"
+              value={userAnswer}
+              onChange={(e) => setUserAnswer(e.target.value)}
+              className="w-full text-center text-2xl font-black p-4 rounded-2xl border-2 border-slate-200 focus:border-blue-600 focus:bg-blue-50/20 focus:outline-none transition-all tracking-wider"
+            />
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={currentIndex === 0}
+                onClick={() => {
+                  const prevIdx = currentIndex - 1;
+                  setCurrentIndex(prevIdx);
+                  setUserAnswer(userAnswers[prevIdx] || '');
+                }}
+                className="w-1/3 py-3.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 font-bold rounded-2xl text-sm transition-all"
+              >
+                이전 문제
+              </button>
+
+              <button
+                type="submit"
+                className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl text-sm shadow-md shadow-blue-200 transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>{currentIndex + 1 === quizList.length ? '답안 제출 & 시험 완료' : '다음 문제'}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // RESULT SCREEN
+  return (
+    <div className="max-w-3xl mx-auto w-full space-y-6">
+      {/* Score Summary Box */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center space-y-4">
+        <div className="inline-flex p-3 bg-amber-50 text-amber-500 rounded-2xl">
+          <Award className="w-10 h-10" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">수행평가 모의고사 결과</h2>
+        
+        <div className="flex justify-center items-baseline gap-2">
+          <span className="text-5xl font-black text-blue-600">{scoreResult.percentage}점</span>
+          <span className="text-slate-400 font-bold">({scoreResult.correctCount} / {quizList.length} 정답)</span>
+        </div>
+
+        <p className="text-xs text-slate-500 font-bold">
+          총 소요 시간: <span className="text-slate-800">{formatTime(elapsedTime)}</span>
+        </p>
+
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <button
+            onClick={() => setExamStatus('config')}
+            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl text-sm shadow-md transition-all flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>다시 시험 보기</span>
+          </button>
+          <button
+            onClick={addAllWrongToReview}
+            className="px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-2xl text-sm shadow-md transition-all flex items-center gap-2"
+          >
+            <Flame className="w-4 h-4 fill-current" />
+            <span>틀린 문제 모두 오답노트에 추가</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Detailed Result Breakdown */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+          <FileCheck className="w-5 h-5 text-blue-600" />
+          <span>문항별 채점 상세 내역</span>
+        </h3>
+
+        <div className="divide-y divide-slate-100">
+          {scoreResult.details.map((item, idx) => (
+            <div key={idx} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-md ${
+                    item.isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {idx + 1}. {item.isCorrect ? '정답 ⭕' : '오답 ❌'}
+                  </span>
+                  <span className="font-extrabold text-slate-900">{item.idiom_kr}</span>
+                  <span className="text-xs text-slate-400 font-bold">({item.idiom_cn})</span>
+                </div>
+                <p className="text-xs text-slate-600 font-medium">제시된 뜻: "{item.promptMean}"</p>
+                {!item.isCorrect && (
+                  <p className="text-xs text-rose-600 font-bold">
+                    제출 답안: <span className="line-through">{item.userAns}</span> ➔ 정답: {item.idiom_kr}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  onClick={() => toggleReview(item.id)}
+                  className={`text-xs px-3 py-1.5 rounded-xl font-bold border transition-colors ${
+                    reviewIds.includes(item.id)
+                      ? 'bg-amber-50 border-amber-300 text-amber-700'
+                      : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                  }`}
+                >
+                  {reviewIds.includes(item.id) ? '오답노트 담김' : '오답노트 추가'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// SWIPE / FLASHCARD MODULE
+// ==========================================
+function SwipeModule({ dataset, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
+  const [index, setIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const current = dataset[index];
+
+  const handleNext = () => {
+    setIsFlipped(false);
+    setTimeout(() => {
+      setIndex((prev) => (prev + 1) % dataset.length);
+    }, 150);
+  };
+
+  const handlePrev = () => {
+    setIsFlipped(false);
+    setTimeout(() => {
+      setIndex((prev) => (prev - 1 + dataset.length) % dataset.length);
+    }, 150);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowRight') handleNext();
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ') {
+        e.preventDefault();
+        setIsFlipped(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <div className="max-w-xl mx-auto w-full flex flex-col items-center justify-center space-y-4 py-2">
+      {/* Top Header */}
+      <div className="w-full flex items-center justify-between text-xs text-slate-500 font-bold px-1">
+        <span>성어 {index + 1} / {dataset.length}</span>
+        <span className="text-blue-600">Tip: 키보드 방향키(←/→) & 스페이스바 사용 가능</span>
+      </div>
+
+      {/* Main Flashcard */}
+      <div
+        onClick={() => setIsFlipped(!isFlipped)}
+        className="w-full aspect-[4/3] max-h-[380px] bg-white rounded-3xl border border-slate-200/90 shadow-xl p-8 flex flex-col items-center justify-between cursor-pointer relative transition-all duration-300 hover:shadow-2xl hover:border-blue-300 select-none group"
+      >
+        <div className="w-full flex items-center justify-between">
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleBookmark(current.id); }}
+            className={`p-2 rounded-full border transition-all ${
+              bookmarks.includes(current.id) 
+                ? 'bg-amber-50 border-amber-300 text-amber-500 fill-amber-500' 
+                : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'
+            }`}
+          >
+            <Bookmark className="w-4 h-4" />
+          </button>
+
+          <span className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">
+            초성: {current.chosung}
+          </span>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleReview(current.id); }}
+            className={`p-2 rounded-full border transition-all ${
+              reviewIds.includes(current.id) 
+                ? 'bg-rose-50 border-rose-300 text-rose-500' 
+                : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'
+            }`}
+          >
+            <Flame className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Card Body */}
+        <div className="text-center my-auto py-4 space-y-3">
+          {!isFlipped ? (
+            <div className="space-y-3">
+              <span className="text-xs font-extrabold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                [질문 뜻] 터치하여 성어 확인
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
+                "{current.mean1}"
+              </h2>
+              {current.mean2 && (
+                <p className="text-xs text-slate-400 font-medium italic">
+                  뜻 2: "{current.mean2}"
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 animate-fadeIn">
+              <h2 className="text-4xl font-black text-blue-600 tracking-wider">{current.idiom_kr}</h2>
+              <p className="text-lg font-bold text-slate-600">{current.idiom_cn}</p>
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs text-slate-600 text-left space-y-1">
+                <p><span className="font-bold text-blue-600">뜻 1:</span> {current.mean1}</p>
+                {current.mean2 && <p><span className="font-bold text-blue-600">뜻 2:</span> {current.mean2}</p>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="text-xs text-slate-400 flex items-center gap-1 font-bold">
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span>{isFlipped ? '질문으로 뒤집기' : '성어 확인하기'}</span>
+        </div>
+      </div>
+
+      {/* Control Buttons */}
+      <div className="flex items-center justify-between w-full gap-4 pt-2">
+        <button
+          onClick={handlePrev}
+          className="flex-1 py-3 px-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:bg-slate-50 transition-all text-sm flex items-center justify-center gap-1"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>이전 성어</span>
+        </button>
+
+        <button
+          onClick={handleNext}
+          className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-md shadow-blue-200 transition-all text-sm flex items-center justify-center gap-1"
+        >
+          <span>다음 성어</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// DICTIONARY MODULE
+// ==========================================
+function DictModule({ dataset, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
+  const [selectedChosung, setSelectedChosung] = useState('전체');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const chosungs = ['전체', 'ㄱ', 'ㄴ', 'ㄷ', 'ㅁ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+  const filtered = useMemo(() => {
+    return dataset.filter(item => {
+      const matchChosung = selectedChosung === '전체' || item.chosung === selectedChosung;
+      const matchSearch = item.idiom_kr.includes(searchTerm) || 
+                          item.idiom_cn.includes(searchTerm) || 
+                          item.mean1.includes(searchTerm) || 
+                          (item.mean2 && item.mean2.includes(searchTerm));
+      return matchChosung && matchSearch;
+    });
+  }, [dataset, selectedChosung, searchTerm]);
+
+  return (
+    <div className="space-y-4">
+      {/* Search & Chosung Filter */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="성어, 한자, 뜻 검색..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+          />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        </div>
+
+        {/* Chosung Tabs */}
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {chosungs.map(cho => (
+            <button
+              key={cho}
+              onClick={() => setSelectedChosung(cho)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                selectedChosung === cho 
+                  ? 'bg-blue-600 text-white shadow-sm' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {cho}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Dictionary List */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 flex justify-between">
+          <span>검색 결과: {filtered.length}개 성어</span>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {filtered.map(item => (
+            <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-slate-900 text-lg">{item.idiom_kr}</span>
+                  <span className="font-bold text-blue-600 text-sm">({item.idiom_cn})</span>
+                  <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                    초성 {item.chosung}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-700 font-medium">
+                  <span className="font-bold text-slate-400">뜻 1:</span> {item.mean1}
+                </p>
+                {item.mean2 && (
+                  <p className="text-xs text-slate-500 font-medium">
+                    <span className="font-bold text-slate-400">뜻 2:</span> {item.mean2}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  onClick={() => toggleBookmark(item.id)}
+                  className={`p-2 rounded-xl border transition-all ${
+                    bookmarks.includes(item.id) 
+                      ? 'bg-amber-50 border-amber-300 text-amber-500' 
+                      : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'
+                  }`}
+                  title="찜하기"
+                >
+                  <Bookmark className="w-4 h-4 fill-current" />
+                </button>
+                <button
+                  onClick={() => toggleReview(item.id)}
+                  className={`p-2 rounded-xl border transition-all ${
+                    reviewIds.includes(item.id) 
+                      ? 'bg-rose-50 border-rose-300 text-rose-500' 
+                      : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'
+                  }`}
+                  title="오답노트"
+                >
+                  <Flame className="w-4 h-4 fill-current" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// REVIEW & BOOKMARKS MODULE
+// ==========================================
+function ReviewModule({ dataset, toggleReview, reviewIds, toggleBookmark, bookmarks, setActiveTab }) {
+  const reviewItems = useMemo(() => dataset.filter(item => reviewIds.includes(item.id)), [dataset, reviewIds]);
+  const bookmarkItems = useMemo(() => dataset.filter(item => bookmarks.includes(item.id)), [dataset, bookmarks]);
+
+  return (
+    <div className="space-y-6">
+      {/* Review Section */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+            <Flame className="w-5 h-5 text-rose-500" />
+            <span>오답노트 성어 목록 ({reviewItems.length})</span>
+          </h3>
+        </div>
+
+        {reviewItems.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 text-xs">
+            오답노트에 등록된 성어가 없습니다. 모의고사 후 틀린 성어를 담아보세요!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {reviewItems.map(item => (
+              <div key={item.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-1 relative">
+                <div className="flex justify-between items-start">
+                  <span className="font-extrabold text-slate-900">{item.idiom_kr} ({item.idiom_cn})</span>
+                  <button
+                    onClick={() => toggleReview(item.id)}
+                    className="text-xs text-rose-500 hover:underline font-bold"
+                  >
+                    삭제
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 font-medium"> 뜻1: {item.mean1}</p>
+                {item.mean2 && <p className="text-xs text-slate-500"> 뜻2: {item.mean2}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bookmarks Section */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+            <Bookmark className="w-5 h-5 text-amber-500 fill-amber-500" />
+            <span>내가 찜한 성어 ({bookmarkItems.length})</span>
+          </h3>
+        </div>
+
+        {bookmarkItems.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 text-xs">
+            찜한 성어가 없습니다. 성어 열람 또는 스와이프 모드에서 찜해보세요!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {bookmarkItems.map(item => (
+              <div key={item.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-1 relative">
+                <div className="flex justify-between items-start">
+                  <span className="font-extrabold text-slate-900">{item.idiom_kr} ({item.idiom_cn})</span>
+                  <button
+                    onClick={() => toggleBookmark(item.id)}
+                    className="text-xs text-amber-600 hover:underline font-bold"
+                  >
+                    해제
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 font-medium"> 뜻1: {item.mean1}</p>
+                {item.mean2 && <p className="text-xs text-slate-500"> 뜻2: {item.mean2}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
