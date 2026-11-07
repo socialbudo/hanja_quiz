@@ -260,7 +260,7 @@
       );
     }
 
-    // 모의고사 모듈 (엔터 키 지원 및 초성 선택 기능 추가)
+    // 모의고사 모듈
     function ExamModule({ data, splitData, toggleReview, reviewIds }) {
       const [examStatus, setExamStatus] = useState('config'); 
       const [datasetMode, setDatasetMode] = useState('split');
@@ -275,6 +275,7 @@
       const [showHintHanja, setShowHintHanja] = useState(false);
       const [elapsedTime, setElapsedTime] = useState(0);
       const timerRef = useRef(null);
+      const feedbackBoxRef = useRef(null);
 
       const baseChosungList = ["ㄱ","ㄴ","ㄷ","ㄹ","ㅁ","ㅂ","ㅅ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 
@@ -359,6 +360,13 @@
         if (timerRef.current) clearInterval(timerRef.current);
         setExamStatus('result');
       };
+
+      // 피드백 상태가 되었을 때 포커스를 주어 엔터키 입력을 바로 받도록 처리
+      useEffect(() => {
+        if (examStatus === 'feedback' && feedbackBoxRef.current) {
+          feedbackBoxRef.current.focus();
+        }
+      }, [examStatus]);
 
       // 엔터키 핸들러 (입력 상태일 때 제출, 피드백 상태일 때 다음 문제로)
       const handleKeyDown = (e) => {
@@ -491,9 +499,10 @@
               <div className="bg-indigo-600 h-full transition-all duration-300" style={{ width: `${((currentIndex + 1) / quizList.length) * 100}%` }}></div>
             </div>
 
+            {/* 뜻1인지 뜻2인지 명확하게 표기되도록 수정 */}
             <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-6 mb-6 text-center">
-              <span className="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md mb-3">
-                {currentQ.meanLabel || '제시된 뜻'}
+              <span className="inline-block bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3 shadow-sm">
+                {currentQ.meanLabel ? `[ ${currentQ.meanLabel} ]` : '[ 뜻 출제 ]'}
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
                 "{currentQ.promptMean}"
@@ -525,8 +534,7 @@
                 </button>
               </div>
             ) : (
-              <div className="text-center py-2" tabIndex="0" onKeyDown={handleKeyDown} autoFocus>
-                {/* O/X 크기를 컴팩트하게 줄임 */}
+              <div ref={feedbackBoxRef} tabIndex={0} onKeyDown={handleKeyDown} className="text-center py-2 outline-none cursor-pointer">
                 <div className={`text-3xl sm:text-4xl font-black mb-3 ${currentIsCorrect ? 'text-emerald-500' : 'text-rose-500'}`}>
                   {currentIsCorrect ? '⭕ 정답입니다!' : '❌ 틀렸습니다!'}
                 </div>
@@ -594,7 +602,7 @@
       );
     }
 
-    // 플래시카드 모듈 (엔터키로 정답 확인 및 다음 카드 넘기기 지원)
+    // 플래시카드 모듈
     function SwipeModule({ dataset, splitDataset, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
       const [datasetMode, setDatasetMode] = useState('split');
       const [chosungFilter, setChosungFilter] = useState('전체');
@@ -642,7 +650,6 @@
         setIndex((prev) => (prev - 1 + currentList.length) % currentList.length);
       };
 
-      // 플래시카드 엔터키 핸들러 (뒤집히지 않았으면 뒤집고, 뒤집혀 있으면 다음 카드로)
       useEffect(() => {
         const handleKeyDown = (e) => {
           if (e.key === 'Enter') {
@@ -669,7 +676,6 @@
 
       return (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 max-w-lg mx-auto">
-          {/* Mode Selector */}
           <div className="flex gap-2 mb-4 bg-slate-100 p-1 rounded-xl">
             <button onClick={() => setDatasetMode('normal')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${datasetMode === 'normal' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`}>
               📌 100개 성어 카드
@@ -679,7 +685,6 @@
             </button>
           </div>
 
-          {/* Chosung Filter with Counts */}
           <div className="mb-4 flex flex-wrap justify-between items-center gap-2">
             <div className="flex flex-wrap gap-1 mb-2">
               <button onClick={() => setChosungFilter('전체')} className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${chosungFilter === '전체' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
