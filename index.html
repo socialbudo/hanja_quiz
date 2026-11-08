@@ -22,7 +22,6 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
 
-    // 한글 단어에서 첫 자음(ㄱ~ㅎ) 추출 함수
     const getChosung = (str) => {
       const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
       const code = str.charCodeAt(0) - 44032;
@@ -30,7 +29,6 @@
       return cho[Math.floor(code / 588)];
     };
 
-    // 100개 사자성어 원본 데이터셋
     const IDIOM_DATA_RAW = [
       { id: 1, idiom_kr: '가렴주구', idiom_cn: '苛斂誅求', mean1: '가혹하게 세금을 거두거나 백성의 재물을 억지로 뺏음', mean2: '' },
       { id: 2, idiom_kr: '각골통한', idiom_cn: '刻骨痛恨', mean1: '뼈에 새겨 놓을 만큼 잊을 수 없고 고통스러운 원한', mean2: '' },
@@ -229,7 +227,7 @@
           </nav>
 
           <main>
-            {tab === 'exam' && <ExamModule data={IDIOM_DATA} splitData={SPLIT_MEAN_DATA} toggleReview={toggleReviewItem} reviewIds={reviewIds} bookmarks={bookmarks} />}
+            {tab === 'exam' && <ExamModule data={IDIOM_DATA} splitData={SPLIT_MEAN_DATA} reviewIds={reviewIds} setReviewIds={setReviewIds} bookmarks={bookmarks} />}
             {tab === 'swipe' && <SwipeModule dataset={IDIOM_DATA} splitDataset={SPLIT_MEAN_DATA} toggleReview={toggleReviewItem} reviewIds={reviewIds} toggleBookmark={toggleBookmark} bookmarks={bookmarks} />}
             {tab === 'dict' && <DictModule data={IDIOM_DATA} toggleReview={toggleReviewItem} reviewIds={reviewIds} toggleBookmark={toggleBookmark} bookmarks={bookmarks} />}
             {tab === 'review' && <ReviewModule data={IDIOM_DATA} reviewIds={reviewIds} toggleReview={toggleReviewItem} toggleBookmark={toggleBookmark} bookmarks={bookmarks} />}
@@ -253,11 +251,11 @@
       );
     }
 
-    // 모의고사 모듈
-    function ExamModule({ data, splitData, toggleReview, reviewIds, bookmarks }) {
+    // 모의고사 모듈 (오답 자동 저장 및 정답 시 자동 삭제 로직 포함)
+    function ExamModule({ data, splitData, reviewIds, setReviewIds, bookmarks }) {
       const [examStatus, setExamStatus] = useState('config'); 
       const [datasetMode, setDatasetMode] = useState('split');
-      const [scopeType, setScopeType] = useState('all'); // 'all', 'bookmark', 'review', 'chosung'
+      const [scopeType, setScopeType] = useState('all'); 
       const [chosungFilter, setChosungFilter] = useState('전체');
       const [questionCount, setQuestionCount] = useState(10);
       const [quizList, setQuizList] = useState([]);
@@ -339,10 +337,16 @@
         setCurrentIsCorrect(isCorrect);
         setExamStatus('feedback');
 
-        // 정답 시 오답노트에서 자동 제거
-        if (isCorrect && reviewIds.includes(currentQ.id)) {
-          toggleReview(currentQ.id);
-        }
+        // ★ 모의고사 오답 자동 저장 및 정답 시 자동 삭제 처리
+        setReviewIds(prev => {
+          if (!isCorrect) {
+            // 틀렸을 경우: 오답노트에 없으면 추가
+            return prev.includes(currentQ.id) ? prev : [...prev, currentQ.id];
+          } else {
+            // 맞았을 경우: 오답노트에 있었으면 제거
+            return prev.filter(id => id !== currentQ.id);
+          }
+        });
       };
 
       const handleNextQuestion = () => {
@@ -406,7 +410,7 @@
         return (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <h2 className="text-xl font-bold text-slate-900 mb-2">실전 모의고사 설정</h2>
-            <p className="text-sm text-slate-500 mb-6">출제 방식과 학습 범위를 선택하세요. (정답 시 오답노트에서 자동 삭제)</p>
+            <p className="text-sm text-slate-500 mb-6">틀린 문제는 오답노트에 자동 저장되며, 정답을 맞히면 오답노트에서 자동으로 삭제됩니다.</p>
 
             <div className="mb-6">
               <label className="block font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">출제 방식 선택</label>
@@ -422,7 +426,6 @@
               </div>
             </div>
 
-            {/* 학습 범위 및 초성 선택 구역 조화 */}
             <div className="mb-6">
               <label className="block font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">학습 범위 및 필터 선택</label>
               <div className="grid grid-cols-3 gap-2 mb-3">
@@ -437,7 +440,6 @@
                 </button>
               </div>
 
-              {/* 되살린 ㄱ~ㅎ 초성 필터 */}
               <div className="mt-2">
                 <button onClick={() => setScopeType(scopeType === 'chosung' ? 'all' : 'chosung')} className={`w-full py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-between transition-all ${scopeType === 'chosung' ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
                   <span>🔤 초성별 골라서 풀기 (ㄱ~ㅎ 선택)</span>
@@ -529,7 +531,7 @@
             ) : (
               <div ref={feedbackBoxRef} tabIndex={0} onKeyDown={handleKeyDown} className="text-center py-2 outline-none cursor-pointer">
                 <div className={`text-3xl sm:text-4xl font-black mb-3 ${currentIsCorrect ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {currentIsCorrect ? '⭕ 정답입니다! (오답노트 자동 삭제)' : '❌ 틀렸습니다!'}
+                  {currentIsCorrect ? '⭕ 정답입니다! (오답노트 자동 삭제)' : '❌ 틀렸습니다! (오답노트 자동 저장)'}
                 </div>
 
                 {!currentIsCorrect && (
@@ -554,6 +556,7 @@
             <h2 className="text-2xl font-black text-slate-900 mb-2">모의고사 최종 결과</h2>
             <div className="text-5xl font-black text-indigo-600 mb-3">{scoreResult.percentage}점</div>
             <p className="text-sm font-bold text-slate-600">총 {quizList.length}문항 중 <span className="text-emerald-600">{scoreResult.correctCount}개</span> 정답</p>
+            <p className="text-xs text-slate-400 mt-1">틀린 문항은 오답노트에 자동 저장되었습니다.</p>
             <button onClick={() => setExamStatus('config')} className="mt-6 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md">
               🔄 다시 시험 보기
             </button>
@@ -565,7 +568,7 @@
     // 플래시카드 모듈
     function SwipeModule({ dataset, splitDataset, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
       const [datasetMode, setDatasetMode] = useState('split');
-      const [scopeType, setScopeType] = useState('all'); // 'all', 'bookmark', 'review', 'chosung'
+      const [scopeType, setScopeType] = useState('all'); 
       const [chosungFilter, setChosungFilter] = useState('전체');
       const [index, setIndex] = useState(0);
       const [isFlipped, setIsFlipped] = useState(false);
@@ -637,7 +640,6 @@
             <button onClick={() => setDatasetMode('split')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold ${datasetMode === 'split' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`}>전체 뜻 분리</button>
           </div>
 
-          {/* 상단 필터 및 되살린 초성 선택 */}
           <div className="grid grid-cols-3 gap-2 mb-3">
             <button onClick={() => setScopeType('all')} className={`py-2 rounded-xl text-xs font-bold border ${scopeType === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>전체보기</button>
             <button onClick={() => setScopeType('bookmark')} className={`py-2 rounded-xl text-xs font-bold border ${scopeType === 'bookmark' ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>⭐ 즐겨찾기 ({bookmarks.length})</button>
@@ -702,7 +704,7 @@
 
     // 전체 열람 모듈
     function DictModule({ data, toggleReview, reviewIds, toggleBookmark, bookmarks }) {
-      const [filterMode, setFilterMode] = useState('all'); // 'all', 'bookmark', 'chosung'
+      const [filterMode, setFilterMode] = useState('all'); 
       const [chosungFilter, setChosungFilter] = useState('전체');
       const [searchQuery, setSearchQuery] = useState('');
 
@@ -753,7 +755,6 @@
             </button>
           </div>
 
-          {/* 되살린 ㄱ~ㅎ 초성 필터 바 */}
           <div className="mb-6">
             <button onClick={() => setFilterMode(filterMode === 'chosung' ? 'all' : 'chosung')} className={`w-full py-2 px-3 rounded-xl text-xs font-bold border flex items-center justify-between ${filterMode === 'chosung' ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
               <span>🔤 초성별 모아보기 (ㄱ~ㅎ 선택)</span>
@@ -817,7 +818,7 @@
           <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
             <div className="text-4xl mb-3">🎉</div>
             <h3 className="font-bold text-slate-800 mb-1">오답노트가 비어 있습니다</h3>
-            <p className="text-xs text-slate-500">모의고사에서 틀린 문항은 자동으로 담기며, 정답을 맞히면 자동으로 비워집니다!</p>
+            <p className="text-xs text-slate-500">모의고사에서 틀린 문제는 오답노트에 자동으로 저장되며, 정답을 맞히면 자동으로 비워집니다!</p>
           </div>
         );
       }
